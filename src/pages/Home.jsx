@@ -52,12 +52,6 @@ export default function Home() {
           padding: "40px"
         }}
       >
-      <div className="hero" style={{ marginBottom: "40px" }}>
-        <h1 style={{ color: "white" }}>
-          Abre cajas. Gana skins. Juega en €.
-        </h1>
-      </div>
-
       <div
         className="container"
         style={{
