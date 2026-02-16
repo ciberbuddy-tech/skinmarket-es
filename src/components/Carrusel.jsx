@@ -35,7 +35,7 @@ export default function Carrusel() {
         const shuffled = validSkins.sort(() => Math.random() - 0.5);
 
         // Tomamos 20 skins iniciales para el carrusel
-        setSkins(shuffled.slice(0, 20));
+        setSkins(shuffled.slice(0, 30));
 
         // Cada 5 segundos agregamos una skin random al inicio
         const interval = setInterval(() => {
@@ -47,7 +47,7 @@ export default function Carrusel() {
             rarity: newSkin.rarity,
             image: newSkin.image
           };
-          setSkins(prev => [formatted, ...prev.slice(0, 19)]);
+          setSkins(prev => [formatted, ...prev.slice(0, 29)]);
         }, 5000);
 
         return () => clearInterval(interval);
