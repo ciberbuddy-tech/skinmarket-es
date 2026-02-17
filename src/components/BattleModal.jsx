@@ -87,7 +87,7 @@ export default function BattleModal({ open, onClose, onSelectBoxes }) {
         })}
 
         <div style={{ marginBottom: "16px" }}>
-          <strong>Total:</strong> {totalCost}€
+          <strong>Total:</strong> {parseFloat(totalCost).toFixed(2)}€
         </div>
 
         <button

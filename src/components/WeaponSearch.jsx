@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
+import { getSkins } from "../hooks/useFetchSkins";
 
 export default function WeaponSearch() {
   const [skins, setSkins] = useState([]);
   const [search, setSearch] = useState("");
   const [filtered, setFiltered] = useState([]);
 
-  // Cargar datos de skins al iniciarse
+  // Cargar skins desde API centralizado
   useEffect(() => {
-    fetch("https://api.cs2data.gg/skins.json")
-      .then(res => res.json())
+    getSkins()
       .then(data => {
         setSkins(data);
         setFiltered(data);
@@ -21,8 +21,7 @@ export default function WeaponSearch() {
     const lower = search.toLowerCase();
     setFiltered(
       skins.filter(skin => 
-        skin.name.toLowerCase().includes(lower) ||
-        skin.weapon?.name.toLowerCase().includes(lower)
+        skin.name.toLowerCase().includes(lower)
       )
     );
   }, [search, skins]);

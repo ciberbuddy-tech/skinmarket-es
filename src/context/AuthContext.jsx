@@ -1,5 +1,6 @@
 // src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
+import { getSkins } from "../hooks/useFetchSkins";
 
 const AuthContext = createContext();
 
@@ -22,25 +23,22 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
-  // Login con skins reales desde la API pública JSON
+  // Login con skins reales desde la API pública centralizada
   const login = async (email) => {
     try {
-      // Petición a CSGO-API skins JSON
-      const res = await fetch(
-        "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json"
-      );
-      const skinsData = await res.json();
+      // Usar hook centralizado para obtener skins
+      const skinsData = await getSkins();
 
       // Elegimos 3 skins aleatorias para el inventario inicial
       const random3 = skinsData
         .sort(() => Math.random() - 0.5)
         .slice(0, 3)
         .map((skin) => ({
-          id: `${skin.id}-${Date.now()}`,       // ID único
-          name: skin.name,                      // Nombre real
-          price: Math.floor(Math.random() * 1500) + 100,  // Precio random
-          rarity: skin.rarity?.name || "Unknown",         // Rareza si existe
-          image: skin.image || ""               // Imagen real del JSON
+          id: `${skin.id}-${Date.now()}`,
+          name: skin.name,
+          price: Math.floor(Math.random() * 1500) + 100,
+          rarity: skin.rarity?.name || "Unknown",
+          image: skin.image || ""
         }));
 
       const newUser = {

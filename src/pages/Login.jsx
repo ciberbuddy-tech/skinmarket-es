@@ -20,7 +20,6 @@ export default function Login() {
   const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const validatePassword = (password) => password.length >= 6;
 
-  // Validación en tiempo real
   useEffect(() => {
     setEmailValid(validateEmail(email));
     setPasswordValid(validatePassword(password));
@@ -46,15 +45,14 @@ export default function Login() {
 
     setLoading(true);
     try {
-      await login(email, password); // Función de login del contexto
-      // Guardar en localStorage
+      await login(email, password);
       localStorage.setItem("userEmail", email);
       setSuccess(true);
       setTimeout(() => {
         navigate("/dashboard");
-      }, 1000); // Feedback visual antes de navegar
+      }, 800);
     } catch (err) {
-      setError("Email o contraseña incorrectos");
+      setError("Error al iniciar sesión. Intenta de nuevo.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -62,86 +60,241 @@ export default function Login() {
   };
 
   return (
-    <div className="container" style={{ padding: '20px' }}>
-      <div className="card" style={{
-        maxWidth: '400px',
-        margin: '0 auto',
-        marginTop: '50px',
-        padding: '20px',
-        borderRadius: '8px',
-        boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "20px"
+    }}>
+      <div style={{
+        background: "linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)",
+        border: "2px solid rgba(0, 255, 136, 0.2)",
+        borderRadius: "16px",
+        padding: "40px",
+        maxWidth: "420px",
+        width: "100%",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.5)"
       }}>
-        <h1 style={{ marginTop: 0, textAlign: 'center' }}>Iniciar Sesión</h1>
+        {/* Encabezado */}
+        <div style={{ textAlign: "center", marginBottom: "40px" }}>
+          <div style={{ fontSize: "3rem", marginBottom: "16px" }}>🎮</div>
+          <h1 style={{
+            fontSize: "2rem",
+            margin: 0,
+            color: "white",
+            marginBottom: "8px"
+          }}>
+            Iniciar Sesión
+          </h1>
+          <p style={{
+            color: "rgba(255,255,255,0.6)",
+            margin: 0,
+            fontSize: "0.9rem"
+          }}>
+            Accede a tu cuenta de SkinMarket ES
+          </p>
+        </div>
+
+        {/* Formulario */}
         <form onSubmit={handleSubmit}>
-          <input
-            type="email"
-            placeholder="tu@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{
-              width: '100%',
-              marginBottom: '10px',
-              padding: '10px',
-              borderRadius: '4px',
-              border: `1px solid ${email ? (emailValid ? '#28a745' : '#ff5555') : '#ccc'}`,
-              boxSizing: 'border-box'
-            }}
-          />
-          <div style={{ position: 'relative', marginBottom: '15px' }}>
+          {/* Email */}
+          <div style={{ marginBottom: "20px" }}>
+            <label style={{
+              display: "block",
+              color: "rgba(255,255,255,0.8)",
+              marginBottom: "8px",
+              fontSize: "0.9rem",
+              fontWeight: "bold"
+            }}>
+              📧 Email
+            </label>
+            <input
+              type="email"
+              placeholder="tu@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px",
+                borderRadius: "8px",
+                border: `2px solid ${
+                  email ? (emailValid ? "#00ff88" : "#ff5555") : "rgba(0,255,136,0.2)"
+                }`,
+                background: "rgba(0,0,0,0.3)",
+                color: "white",
+                fontSize: "1rem",
+                boxSizing: "border-box",
+                transition: "all 0.2s ease"
+              }}
+            />
+            {email && !emailValid && (
+              <p style={{ color: "#ff5555", fontSize: "0.8rem", margin: "4px 0 0 0" }}>
+                ✗ Email inválido
+              </p>
+            )}
+            {email && emailValid && (
+              <p style={{ color: "#00ff88", fontSize: "0.8rem", margin: "4px 0 0 0" }}>
+                ✓ Email válido
+              </p>
+            )}
+          </div>
+
+          {/* Contraseña */}
+          <div style={{ marginBottom: "20px", position: "relative" }}>
+            <label style={{
+              display: "block",
+              color: "rgba(255,255,255,0.8)",
+              marginBottom: "8px",
+              fontSize: "0.9rem",
+              fontWeight: "bold"
+            }}>
+              🔒 Contraseña
+            </label>
             <input
               type={showPassword ? "text" : "password"}
-              placeholder="Contraseña"
+              placeholder="Mínimo 6 caracteres"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               style={{
-                width: '100%',
-                padding: '10px',
-                borderRadius: '4px',
-                border: `1px solid ${password ? (passwordValid ? '#28a745' : '#ff5555') : '#ccc'}`,
-                boxSizing: 'border-box'
+                width: "100%",
+                padding: "12px 40px 12px 12px",
+                borderRadius: "8px",
+                border: `2px solid ${
+                  password ? (passwordValid ? "#00ff88" : "#ff5555") : "rgba(0,255,136,0.2)"
+                }`,
+                background: "rgba(0,0,0,0.3)",
+                color: "white",
+                fontSize: "1rem",
+                boxSizing: "border-box",
+                transition: "all 0.2s ease"
               }}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               style={{
-                position: 'absolute',
-                right: '10px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                fontSize: '0.9rem'
+                position: "absolute",
+                right: "12px",
+                top: "38px",
+                border: "none",
+                background: "none",
+                cursor: "pointer",
+                fontSize: "1.1rem",
+                color: "rgba(255,255,255,0.6)",
+                transition: "color 0.2s ease"
               }}
+              onMouseOver={(e) => e.target.style.color = "#00ff88"}
+              onMouseOut={(e) => e.target.style.color = "rgba(255,255,255,0.6)"}
             >
-              {showPassword ? "Ocultar" : "Mostrar"}
+              {showPassword ? "👁️" : "👁️‍🗨️"}
             </button>
+            {password && !passwordValid && (
+              <p style={{ color: "#ff5555", fontSize: "0.8rem", margin: "4px 0 0 0" }}>
+                ✗ Mínimo 6 caracteres
+              </p>
+            )}
+            {password && passwordValid && (
+              <p style={{ color: "#00ff88", fontSize: "0.8rem", margin: "4px 0 0 0" }}>
+                ✓ Contraseña válida
+              </p>
+            )}
           </div>
 
-          {error && <p style={{ color: '#ff5555', fontSize: '0.9rem', marginBottom: '10px' }}>{error}</p>}
-          {success && <p style={{ color: '#28a745', fontSize: '0.9rem', marginBottom: '10px' }}>¡Login exitoso! Redirigiendo...</p>}
+          {/* Mensajes */}
+          {error && (
+            <div style={{
+              background: "rgba(255, 85, 85, 0.1)",
+              border: "2px solid #ff5555",
+              color: "#ff9999",
+              padding: "12px",
+              borderRadius: "8px",
+              marginBottom: "20px",
+              fontSize: "0.9rem"
+            }}>
+              ⚠️ {error}
+            </div>
+          )}
 
+          {success && (
+            <div style={{
+              background: "rgba(0, 255, 136, 0.1)",
+              border: "2px solid #00ff88",
+              color: "#00ff88",
+              padding: "12px",
+              borderRadius: "8px",
+              marginBottom: "20px",
+              fontSize: "0.9rem"
+            }}>
+              ✓ ¡Inicio de sesión exitoso! Redirigiendo...
+            </div>
+          )}
+
+          {/* Botón Submit */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !emailValid || !passwordValid}
             style={{
-              width: '100%',
-              padding: '10px',
-              borderRadius: '4px',
-              backgroundColor: '#007bff',
-              color: '#fff',
-              border: 'none',
-              cursor: loading ? 'not-allowed' : 'pointer'
+              width: "100%",
+              padding: "12px",
+              borderRadius: "8px",
+              background: emailValid && passwordValid && !loading
+                ? "linear-gradient(90deg, #00ff88 0%, #00dd66 100%)"
+                : "rgba(0, 255, 136, 0.2)",
+              color: emailValid && passwordValid && !loading ? "black" : "rgba(255,255,255,0.5)",
+              border: "none",
+              cursor: emailValid && passwordValid && !loading ? "pointer" : "not-allowed",
+              fontWeight: "bold",
+              fontSize: "1rem",
+              transition: "all 0.3s ease",
+              boxShadow: emailValid && passwordValid && !loading
+                ? "0 4px 15px rgba(0,255,136,0.3)"
+                : "none"
+            }}
+            onMouseOver={(e) => {
+              if (emailValid && passwordValid && !loading) {
+                e.target.style.transform = "translateY(-2px)";
+                e.target.style.boxShadow = "0 6px 20px rgba(0,255,136,0.5)";
+              }
+            }}
+            onMouseOut={(e) => {
+              e.target.style.transform = "translateY(0)";
+              e.target.style.boxShadow = emailValid && passwordValid && !loading
+                ? "0 4px 15px rgba(0,255,136,0.3)"
+                : "none";
             }}
           >
-            {loading ? "Ingresando..." : "Entrar"}
+            {loading ? (
+              <span style={{ display: "inline-block", animation: "pulse 1s infinite" }}>
+                🔄 Ingresando...
+              </span>
+            ) : "🚀 Iniciar Sesión"}
           </button>
         </form>
-        <p style={{ fontSize: '0.85rem', opacity: 0.7, marginTop: '20px', textAlign: 'center' }}>
-          💡 Tip: Usa tu email y una contraseña de al menos 6 caracteres
-        </p>
+
+        {/* Footer */}
+        <div style={{
+          marginTop: "30px",
+          textAlign: "center",
+          fontSize: "0.85rem",
+          color: "rgba(255,255,255,0.5)"
+        }}>
+          <p style={{ margin: "0 0 8px 0" }}>
+            💡 Tip: Email y contraseña de al menos 6 caracteres
+          </p>
+          <p style={{ margin: 0 }}>
+            Datos almacenados localmente por seguridad
+          </p>
+        </div>
       </div>
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+      `}</style>
     </div>
   );
 }

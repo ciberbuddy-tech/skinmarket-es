@@ -1,5 +1,6 @@
 import Slider from "react-slick";
 import { useEffect, useState } from "react";
+import { getSkins } from "../hooks/useFetchSkins";
 
 const rarityColors = {
   "Mil-Spec Grade": "#4b92db",
@@ -13,12 +14,9 @@ export default function Carrusel() {
   const [skins, setSkins] = useState([]);
 
   useEffect(() => {
-    async function fetchSkins() {
+    async function loadSkins() {
       try {
-        const res = await fetch(
-          "https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json"
-        );
-        const data = await res.json();
+        const data = await getSkins();
 
         // Filtrar solo skins que tengan imagen y rareza
         const validSkins = data
@@ -26,7 +24,7 @@ export default function Carrusel() {
           .map((skin, index) => ({
             id: `${skin.id}-${index}`,
             name: skin.name,
-            price: Math.floor(Math.random() * 5000) + 200, // precio random
+            price: Math.floor(Math.random() * 5000) + 200,
             rarity: skin.rarity?.name || "Mil-Spec Grade",
             image: skin.image
           }));
@@ -34,10 +32,10 @@ export default function Carrusel() {
         // Mezclamos aleatoriamente
         const shuffled = validSkins.sort(() => Math.random() - 0.5);
 
-        // Tomamos 20 skins iniciales para el carrusel
+        // Tomamos 30 skins iniciales
         setSkins(shuffled.slice(0, 30));
 
-        // Cada 5 segundos agregamos una skin random al inicio
+        // Cada 5 segundos agregamos una skin random
         const interval = setInterval(() => {
           const newSkin = validSkins[Math.floor(Math.random() * validSkins.length)];
           const formatted = {
@@ -57,7 +55,7 @@ export default function Carrusel() {
       }
     }
 
-    fetchSkins();
+    loadSkins();
   }, []);
 
   const settings = {
