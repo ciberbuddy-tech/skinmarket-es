@@ -24,7 +24,7 @@ export default function Navbar() {
     display: "flex",
     alignItems: "center",
     gap: "6px",
-    background: "#00ff88",
+    background: "#f5ac3b",
     color: "#000"
   };
 
@@ -36,7 +36,7 @@ export default function Navbar() {
 
   const loginButtonStyle = {
     ...commonButtonStyle,
-    background: "#1e293b",
+    background: "#1a1d24",
     color: "#fff"
   };
 
@@ -48,7 +48,7 @@ export default function Navbar() {
         alignItems: "center",
         flexWrap: "wrap",
         padding: "12px 20px",
-        background: "#0f172a",
+        background: "#111318",
         color: "white"
       }}
     >
@@ -86,16 +86,16 @@ export default function Navbar() {
 
             <Link to="/upload">
               <button style={uploadButtonStyle}>
-                <FaUpload /> Subir Skin
+                <FaUpload /> Depositar
               </button>
             </Link>
 
             <span
               style={{
-                background: "rgba(0, 255, 136, 0.1)",
+                background: "rgba(245, 172, 59, 0.1)",
                 padding: "8px 15px",
                 borderRadius: "8px",
-                border: "1px solid #00ff88",
+                border: "1px solid #f5ac3b",
                 fontSize: "0.9rem"
               }}
             >

@@ -47,12 +47,12 @@ const MiniBattleRoulette = ({ items }) => {
       }}>
         {items.map((skin, idx) => (
           <div key={idx} style={{
-            minWidth: "100px", height: "100px", background: `radial-gradient(circle at center, ${getRarityColor(skin.rarity)}20 0%, #16181c 80%)`,
+            minWidth: "100px", height: "100px", background: "linear-gradient(180deg, #1a1d24 0%, #101215 100%)",
             borderBottom: `3px solid ${getRarityColor(skin.rarity)}`, borderRadius: "8px",
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             padding: "5px", boxSizing: "border-box"
           }}>
-            <img src={skin.image} alt={skin.name} style={{ width: "70px", height: "50px", objectFit: "contain", marginBottom: "4px", filter: `drop-shadow(0 0 5px ${getRarityColor(skin.rarity)}50)` }} onError={(e) => e.target.style.display = "none"} />
+            <img src={skin.image} alt={skin.name} style={{ width: "70px", height: "50px", objectFit: "contain", marginBottom: "4px" }} onError={(e) => e.target.style.display = "none"} />
             <div style={{ color: "white", fontSize: "0.6rem", textAlign: "center", width: "100%", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
               {skin.name}
             </div>
@@ -68,7 +68,6 @@ const BattleSelector = ({ open, onClose, onStart, userBalance, allCases }) => {
   const [selectedBoxes, setSelectedBoxes] = useState({});
   const [botLevel, setBotLevel] = useState("normal"); // easy, normal, hard
   const [gameMode, setGameMode] = useState("classic"); // classic, crazy, terminal
-  const [playerCount, setPlayerCount] = useState(2); // 2, 3, 4 players
 
   if (!open) return null;
 
@@ -99,21 +98,15 @@ const BattleSelector = ({ open, onClose, onStart, userBalance, allCases }) => {
   };
 
   const bots = [
-    { id: "easy", name: "Noob Bots", winRate: "30%", icon: "🤪", color: "#10b981" },
-    { id: "normal", name: "Pro Bots", winRate: "50%", icon: "😎", color: "#3b82f6" },
-    { id: "hard", name: "Hacker Bots", winRate: "80%", icon: "🤖", color: "#ef4444" }
+    { id: "easy", name: "Noob Bot", winRate: "30%", icon: "🤪", color: "#10b981" },
+    { id: "normal", name: "Pro Bot", winRate: "50%", icon: "😎", color: "#3b82f6" },
+    { id: "hard", name: "Hacker Bot", winRate: "80%", icon: "🤖", color: "#ef4444" }
   ];
 
   const modes = [
     { id: "classic", name: "Clásico", desc: "Reglas estándar, el de mayor precio total gana", icon: "⚔️" },
     { id: "crazy", name: "Crazy", desc: "El menor precio total gana, ¡Suerte invertida!", icon: "🤪" },
-    { id: "joker", name: "Joker (Tiebreaker)", desc: "En caso de empate matemático, cara o cruz", icon: "🃏" }
-  ];
-
-  const formats = [
-    { count: 2, label: "1 vs 1", icon: "👤 vs 🤖" },
-    { count: 3, label: "1 vs 1 vs 1", icon: "👤 vs 🤖 vs 🤖" },
-    { count: 4, label: "1 vs 1 vs 1 vs 1", icon: "👤 vs 🤖 vs 🤖 vs 🤖" }
+    { id: "joker", name: "Joker (Tiebreaker)", desc: "En caso de empate matemático, una moneda decide al ganador", icon: "🃏" }
   ];
 
   return (
@@ -131,27 +124,8 @@ const BattleSelector = ({ open, onClose, onStart, userBalance, allCases }) => {
         <h2 style={{ color: "white", marginBottom: "5px", fontSize: "2rem" }}>Crear Batalla</h2>
         <p style={{ color: "rgba(255,255,255,0.7)", marginBottom: "30px" }}>Configura tus oponentes y las cajas para la batalla.</p>
 
-        {/* Players Count Format */}
-        <h3 style={{ color: 'white', marginBottom: "15px" }}>1. Formato de Batalla</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "15px", marginBottom: "30px" }}>
-          {formats.map(f => (
-            <div
-              key={f.count}
-              onClick={() => setPlayerCount(f.count)}
-              style={{
-                background: playerCount === f.count ? "rgba(245, 172, 59, 0.1)" : "#16181c",
-                border: playerCount === f.count ? "2px solid #f5ac3b" : "1px solid #2a2e38",
-                padding: "20px", borderRadius: "12px", cursor: "pointer", transition: "all 0.2s", textAlign: "center"
-              }}
-            >
-              <div style={{ fontSize: "1.5rem", marginBottom: "5px" }}>{f.icon}</div>
-              <div style={{ color: "white", fontWeight: "bold", fontSize: "1.1rem" }}>{f.label}</div>
-            </div>
-          ))}
-        </div>
-
         {/* Game Modes */}
-        <h3 style={{ color: 'white', marginBottom: "15px" }}>2. Modo de Juego</h3>
+        <h3 style={{ color: 'white', marginBottom: "15px" }}>1. Modo de Juego</h3>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "15px", marginBottom: "30px" }}>
           {modes.map(m => (
             <div
@@ -171,14 +145,14 @@ const BattleSelector = ({ open, onClose, onStart, userBalance, allCases }) => {
         </div>
 
         {/* Bot Selection */}
-        <h3 style={{ color: 'white', marginBottom: "15px" }}>3. Nivel de los Bots</h3>
+        <h3 style={{ color: 'white', marginBottom: "15px" }}>2. Oponente (Bot)</h3>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "15px", marginBottom: "30px" }}>
           {bots.map(b => (
             <div
               key={b.id}
               onClick={() => setBotLevel(b.id)}
               style={{
-                background: botLevel === b.id ? `rgba(${b.color === "#10b981" ? "16,185,129" : b.color === "#3b82f6" ? "59,130,246" : "239,68,68"}, 0.1)` : "#16181c",
+                background: botLevel === b.id ? "rgba(255,255,255,0.05)" : "#16181c",
                 border: botLevel === b.id ? `2px solid ${b.color}` : "1px solid #2a2e38",
                 padding: "20px", borderRadius: "12px", cursor: "pointer",
                 display: "flex", alignItems: "center", gap: "15px", transition: "all 0.2s"
@@ -187,14 +161,14 @@ const BattleSelector = ({ open, onClose, onStart, userBalance, allCases }) => {
               <div style={{ fontSize: "2.5rem" }}>{b.icon}</div>
               <div>
                 <div style={{ color: "white", fontWeight: "bold", fontSize: "1.2rem" }}>{b.name}</div>
-                <div style={{ color: b.color, fontSize: "0.9rem" }}>Win Rate aprox: {b.winRate}</div>
+                <div style={{ color: b.color, fontSize: "0.9rem" }}>Win Rate: {b.winRate}</div>
               </div>
             </div>
           ))}
         </div>
 
         {/* Box Selection (Clash.gg style) */}
-        <h3 style={{ color: 'white', marginBottom: "15px" }}>4. Añade Cajas</h3>
+        <h3 style={{ color: 'white', marginBottom: "15px" }}>3. Añade Cajas</h3>
         <div style={{
           display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "15px",
           marginBottom: "30px", maxHeight: "300px", overflowY: "auto", paddingRight: "10px"
@@ -203,22 +177,14 @@ const BattleSelector = ({ open, onClose, onStart, userBalance, allCases }) => {
             const qty = selectedBoxes[c.id] || 0;
             return (
               <div key={c.id} style={{
-                background: `linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.9) 100%), url(${c.imageSrc})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                padding: "10px", borderRadius: "12px", border: "1px solid #2a2e38",
-                textAlign: "center", position: "relative",
-                transition: "transform 0.2s",
-                boxShadow: "0 4px 15px rgba(0,0,0,0.3)"
+                background: "#16181c", padding: "10px", borderRadius: "12px", border: "1px solid #2a2e38",
+                textAlign: "center", position: "relative"
               }}>
-                {/* Specific highlight based on case color/gradient if available */}
-                <div style={{ position: "absolute", inset: 0, background: c.bgGradient || "transparent", opacity: 0.1, borderRadius: "12px" }}></div>
+                <img src={c.imageSrc} alt={c.name} style={{ width: "80px", height: "80px", objectFit: "contain", marginBottom: "10px" }} />
+                <div style={{ color: "white", fontSize: "0.8rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
+                <div style={{ color: "#f5ac3b", fontWeight: "bold", marginBottom: "10px" }}>€{c.price}</div>
 
-                <img src={c.imageSrc} alt={c.name} style={{ width: "80px", height: "80px", objectFit: "contain", marginBottom: "10px", position: "relative", zIndex: 1 }} />
-                <div style={{ color: "white", fontSize: "0.8rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", position: "relative", zIndex: 1 }}>{c.name}</div>
-                <div style={{ color: "#f5ac3b", fontWeight: "bold", marginBottom: "10px", position: "relative", zIndex: 1 }}>€{c.price}</div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0a0c0f", borderRadius: "8px", padding: "5px", position: "relative", zIndex: 1 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0a0c0f", borderRadius: "8px", padding: "5px" }}>
                   <button onClick={() => handleRemoveBox(c.id)} style={{ background: "transparent", border: "none", color: "white", fontSize: "1.2rem", cursor: "pointer", width: "30px" }}>-</button>
                   <span style={{ color: "white", fontWeight: "bold" }}>{qty}</span>
                   <button onClick={() => handleAddBox(c.id)} style={{ background: "transparent", border: "none", color: "#10b981", fontSize: "1.2rem", cursor: "pointer", width: "30px" }}>+</button>
@@ -234,8 +200,8 @@ const BattleSelector = ({ open, onClose, onStart, userBalance, allCases }) => {
           display: "flex", alignItems: "center", justifyContent: "space-between"
         }}>
           <div>
-            <div style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.9rem" }}>Coste Base (Cajas): €{totalCost.toFixed(2)}</div>
-            <div style={{ color: canAfford ? "#f5ac3b" : "#ef4444", fontSize: "1.5rem", fontWeight: "bold" }}>Coste por Participante: €{totalCost.toFixed(2)}</div>
+            <div style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.9rem" }}>Total Cajas: <b>{Object.values(selectedBoxes).reduce((a, b) => a + b, 0)}</b></div>
+            <div style={{ color: canAfford ? "#f5ac3b" : "#ef4444", fontSize: "1.5rem", fontWeight: "bold" }}>Coste: €{totalCost.toFixed(2)}</div>
           </div>
 
           <div style={{ display: "flex", gap: "10px" }}>
@@ -243,7 +209,7 @@ const BattleSelector = ({ open, onClose, onStart, userBalance, allCases }) => {
             <button onClick={onClose} style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "none", padding: "10px 20px", borderRadius: "8px", cursor: "pointer" }}>Cancelar</button>
             <button
               disabled={!canAfford}
-              onClick={() => onStart(selectedBoxes, totalCost, botLevel, gameMode, playerCount)}
+              onClick={() => onStart(selectedBoxes, totalCost, botLevel, gameMode)}
               style={{
                 background: canAfford ? "linear-gradient(90deg, #f5ac3b, #e0992a)" : "rgba(255,255,255,0.1)",
                 color: canAfford ? "black" : "rgba(255,255,255,0.3)",
@@ -265,8 +231,7 @@ export default function Battles() {
   const { skins: allSkins, loading: skinsLoading } = useFetchSkins(1000, false);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // battleState shape: { isBattling: true, boxes: [], players: [{ id, name, icon, isUser, level, color, results: [], total: 0 }], winnerIds: [], gameMode: 'classic' }
-  const [battleState, setBattleState] = useState(null);
+  const [battleState, setBattleState] = useState(null); // { isBattling: false, userResults: [], botResults: [], userTotal: 0, botTotal: 0, winner: null }
   const [animState, setAnimState] = useState({ visibleRounds: 0, hasCompleted: false });
 
   const allCases = useMemo(() => generateAllCases(), []);
@@ -306,13 +271,14 @@ export default function Battles() {
     };
   };
 
-  const handleStartBattle = (selectedBoxes, totalCost, botLevel, gameMode, playerCount) => {
+  const handleStartBattle = (selectedBoxes, totalCost, botLevel, gameMode) => {
     setModalOpen(false);
 
     const boxesToOpen = [];
     Object.entries(selectedBoxes).forEach(([id, qty]) => {
       const cData = allCases.find(c => c.id === id);
       for (let i = 0; i < qty; i++) {
+        // Only push one element for each box quantity
         boxesToOpen.push(cData);
       }
     });
@@ -320,99 +286,78 @@ export default function Battles() {
     // Subtract balance
     updateUser({ ...user, balance: parseFloat((user.balance - totalCost).toFixed(2)) });
 
-    // Initialize Players
-    const initPlayers = [];
-    for (let i = 0; i < playerCount; i++) {
-      if (i === 0) {
-        initPlayers.push({ id: `user`, name: "Tú", icon: "👤", color: "#f5ac3b", isUser: true, level: "user", results: [], total: 0 });
-      } else {
-        initPlayers.push({ id: `bot_${i}`, name: `Bot ${i}`, icon: "🤖", color: "#ef4444", isUser: false, level: botLevel, results: [], total: 0 });
-      }
-    }
+    const userDrops = [];
+    const botDrops = [];
+    let uTotal = 0;
+    let bTotal = 0;
 
-    // Simulate instantly
+    // Simulate instantly for now (we can add suspense animations later)
     boxesToOpen.forEach(cData => {
       const vSkins = getSkinsForCase(cData);
       if (vSkins.length) {
-        initPlayers.forEach(p => {
-          let isHacking = false;
-          if (!p.isUser && p.level === "hard" && Math.random() < 0.8) isHacking = true;
-          if (!p.isUser && p.level === "easy" && Math.random() > 0.7) isHacking = true; // Noob bot rare luck
+        const uSkin = openBoxRandomly(cData, vSkins);
 
-          const drop = openBoxRandomly(cData, vSkins, isHacking);
-          p.results.push(drop);
-          p.total += drop.price;
-        });
+        // Bot logic
+        const isBotHacking = botLevel === "hard" && Math.random() < 0.8;
+        const isBotNoob = botLevel === "easy" && Math.random() < 0.7; // Tries to get bad drops
+
+        const bSkin = openBoxRandomly(cData, vSkins, isBotHacking);
+
+        userDrops.push(uSkin);
+        botDrops.push(bSkin);
+        uTotal += uSkin.price;
+        bTotal += bSkin.price;
       }
     });
 
     // Determine winner based on Game Mode
-    // For Multiplayer, we find the max (classic/joker) or min (crazy) score.
-    // Multiple players can share exactly the same max score (tie).
-    let winnerValue = initPlayers[0].total;
+    let winner = "tie";
 
     if (gameMode === "crazy") {
-      winnerValue = Math.min(...initPlayers.map(p => p.total));
+      if (parseFloat(uTotal.toFixed(2)) < parseFloat(bTotal.toFixed(2))) winner = "user";
+      else if (parseFloat(bTotal.toFixed(2)) < parseFloat(uTotal.toFixed(2))) winner = "bot";
     } else {
-      winnerValue = Math.max(...initPlayers.map(p => p.total));
-    }
+      // Classic & Joker default behavior (Highest price wins)
+      if (parseFloat(uTotal.toFixed(2)) > parseFloat(bTotal.toFixed(2))) winner = "user";
+      else if (parseFloat(bTotal.toFixed(2)) > parseFloat(uTotal.toFixed(2))) winner = "bot";
 
-    // Fix precision
-    winnerValue = parseFloat(winnerValue.toFixed(2));
-
-    let winnerIds = initPlayers.filter(p => parseFloat(p.total.toFixed(2)) === winnerValue).map(p => p.id);
-
-    // Joker Rules (Tiebreaker)
-    if (winnerIds.length > 1 && gameMode === "joker") {
-      // Pick one random winner from the tied group
-      const luckyWinner = winnerIds[Math.floor(Math.random() * winnerIds.length)];
-      winnerIds = [luckyWinner];
+      // Joker Rules (Tiebreaker)
+      if (winner === "tie" && gameMode === "joker") {
+        winner = Math.random() > 0.5 ? "user" : "bot";
+      }
     }
 
     setBattleState({
       isBattling: true,
       boxes: boxesToOpen,
-      players: initPlayers,
-      winnerIds,
+      userResults: userDrops,
+      botResults: botDrops,
+      userTotal: parseFloat(uTotal.toFixed(2)),
+      botTotal: parseFloat(bTotal.toFixed(2)),
+      winner,
+      botLevel,
       gameMode
     });
 
     setAnimState({ visibleRounds: 0, hasCompleted: false });
 
-    // Handle Winnings AFTER animation completes
+    // If user wins, user gets EVERYTHING (user drops + bot drops)
+    if (winner === "user") {
+      const loot = [...userDrops, ...botDrops];
+      updateUser(prev => ({
+        ...prev,
+        inventory: [...(prev.inventory || []), ...loot]
+      }));
+    } else if (winner === "tie") {
+      // Keep own drops
+      updateUser(prev => ({
+        ...prev,
+        inventory: [...(prev.inventory || []), ...userDrops]
+      }));
+    }
+    // If bot wins, user gets nothing
   };
 
-  // Wait until animation COMPLETES before awarding loot natively
-  useEffect(() => {
-    if (battleState && animState.hasCompleted) {
-      const { players, winnerIds } = battleState;
-
-      const isUserWinner = winnerIds.includes("user");
-      const isTie = winnerIds.length > 1;
-
-      if (isUserWinner) {
-        if (!isTie) {
-          // User wins ALL items from all players
-          const totalLoot = [];
-          players.forEach(p => totalLoot.push(...p.results));
-          updateUser(prev => ({
-            ...prev,
-            inventory: [...(prev.inventory || []), ...totalLoot]
-          }));
-        } else {
-          // User just keeps their own items on a massive Tie
-          const userP = players.find(p => p.id === "user");
-          updateUser(prev => ({
-            ...prev,
-            inventory: [...(prev.inventory || []), ...userP.results]
-          }));
-        }
-      }
-      // If user completely loses, they get nothing added to inventory
-    }
-  }, [animState.hasCompleted]);
-
-  // Animation controller
   useEffect(() => {
     if (battleState && !animState.hasCompleted) {
       if (animState.visibleRounds < battleState.boxes.length) {
@@ -430,7 +375,7 @@ export default function Battles() {
   }, [battleState, animState.visibleRounds, animState.hasCompleted]);
 
   // Generate fake reels once for the active round
-  const [activeReels, setActiveReels] = useState({});
+  const [activeReels, setActiveReels] = useState({ uReel: [], bReel: [] });
   useEffect(() => {
     if (battleState && !animState.hasCompleted && animState.visibleRounds < battleState.boxes.length) {
       const roundIdx = animState.visibleRounds;
@@ -438,17 +383,22 @@ export default function Battles() {
       const vSkins = getSkinsForCase(box);
 
       if (vSkins.length > 0) {
-        const newReels = {};
-
-        battleState.players.forEach(p => {
-          const r = [];
-          for (let i = 0; i < 45; i++) r.push(vSkins[Math.floor(Math.random() * vSkins.length)]);
-          r.push(p.results[roundIdx]); // Winner at index 45
-          for (let i = 0; i < 3; i++) r.push(vSkins[Math.floor(Math.random() * vSkins.length)]);
-          newReels[p.id] = r;
-        });
-
-        setActiveReels(newReels);
+        const uR = [];
+        const bR = [];
+        // Fill with garbage
+        for (let i = 0; i < 45; i++) {
+          uR.push(vSkins[Math.floor(Math.random() * vSkins.length)]);
+          bR.push(vSkins[Math.floor(Math.random() * vSkins.length)]);
+        }
+        // Push winners
+        uR.push(battleState.userResults[roundIdx]);
+        bR.push(battleState.botResults[roundIdx]);
+        // Push end padding
+        for (let i = 0; i < 3; i++) {
+          uR.push(vSkins[Math.floor(Math.random() * vSkins.length)]);
+          bR.push(vSkins[Math.floor(Math.random() * vSkins.length)]);
+        }
+        setActiveReels({ uReel: uR, bReel: bR });
       }
     }
   }, [battleState, animState.visibleRounds, animState.hasCompleted, getSkinsForCase]);
@@ -494,18 +444,16 @@ export default function Battles() {
             {animState.hasCompleted ? (
               <div style={{
                 textAlign: "center", marginBottom: "30px",
-                background: battleState.winnerIds.includes("user") ? "rgba(16, 185, 129, 0.1)" : "rgba(239, 68, 68, 0.1)",
-                border: `2px solid ${battleState.winnerIds.includes("user") ? "#10b981" : "#ef4444"}`,
-                padding: "30px", borderRadius: "16px",
+                background: battleState.winner === "user" ? "rgba(16, 185, 129, 0.1)" : battleState.winner === "bot" ? "rgba(239, 68, 68, 0.1)" : "rgba(255,255,255,0.1)",
+                border: `2px solid ${battleState.winner === "user" ? "#10b981" : battleState.winner === "bot" ? "#ef4444" : "grey"}`,
+                padding: "20px", borderRadius: "16px",
                 animation: "slideUp 0.6s ease"
               }}>
-                <h2 style={{ color: "white", margin: "0 0 10px 0", fontSize: "2rem" }}>
-                  {battleState.winnerIds.includes("user") ? (battleState.winnerIds.length > 1 ? "🤝 EMPATE 🤝" : "🎉 ¡HAS GANADO LA BATALLA! 🎉") : "💀 HAS PERDIDO 💀"}
+                <h2 style={{ color: "white", margin: "0 0 10px 0" }}>
+                  {battleState.winner === "user" ? "🎉 ¡HAS GANADO LA BATALLA! 🎉" : battleState.winner === "bot" ? "💀 EL BOT HA GANADO 💀" : "🤝 EMPATE 🤝"}
                 </h2>
-                <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "1.2rem" }}>
-                  {battleState.winnerIds.includes("user")
-                    ? (battleState.winnerIds.length > 1 ? "Te quedas con tus propinas skins." : `¡Felicidades! Te llevas todo el botín de los participantes (€${battleState.players.reduce((sum, p) => sum + p.total, 0).toFixed(2)})`)
-                    : "El Bot se ha llevado todas las recompensas."}
+                <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "1.1rem" }}>
+                  {battleState.winner === "user" ? `Te llevas todo el botín (€${(battleState.userTotal + battleState.botTotal).toFixed(2)})` : battleState.winner === "bot" ? "Has perdido tus cajas." : "Te quedas con tus propias skins."}
                 </p>
               </div>
             ) : (
@@ -514,88 +462,81 @@ export default function Battles() {
                   Ronda {animState.visibleRounds + 1} de {battleState.boxes.length}
                 </div>
                 <div style={{ display: "flex", gap: "20px" }}>
-                  {battleState.players.map(p => (
-                    <div key={p.id} style={{ flex: 1 }}>
-                      <MiniBattleRoulette items={activeReels[p.id] || []} />
-                    </div>
-                  ))}
+                  <div style={{ flex: 1 }}>
+                    <MiniBattleRoulette key={`u-${animState.visibleRounds}`} items={activeReels.uReel} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <MiniBattleRoulette key={`b-${animState.visibleRounds}`} items={activeReels.bReel} />
+                  </div>
                 </div>
               </div>
             )}
 
             <div style={{ display: "flex", gap: "20px", flexDirection: "column" }}>
-              {/* Header Columns: N-Players */}
+              {/* Header Columns: User vs Bot */}
               <div style={{ display: "flex", gap: "20px" }}>
-                {battleState.players.map(p => {
-                  const isWinning = battleState.winnerIds.includes(p.id);
-
-                  return (
-                    <div key={p.id} style={{ flex: 1, background: "#16181c", borderRadius: "16px", padding: "20px", border: `2px solid ${animState.hasCompleted && isWinning ? p.color : "#2a2e38"}`, position: "relative" }}>
-                      {p.isUser && battleState.gameMode !== "classic" && (
-                        <div style={{ position: "absolute", top: "-15px", left: "20px", background: "#f5ac3b", color: "black", padding: "4px 12px", borderRadius: "20px", fontWeight: "bold", fontSize: "0.8rem", textTransform: "uppercase" }}>Modo {battleState.gameMode}</div>
-                      )}
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <div style={{ width: "40px", height: "40px", background: `${p.color}30`, color: p.color, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem" }}>
-                            {p.icon}
-                          </div>
-                          <h3 style={{ color: "white", margin: 0 }}>{p.name}</h3>
-                        </div>
-                        <div style={{ color: isWinning && animState.hasCompleted ? p.color : "white", fontSize: "1.5rem", fontWeight: "bold" }}>
-                          €{p.results.slice(0, animState.visibleRounds).reduce((sum, item) => sum + item.price, 0).toFixed(2)}
-                        </div>
-                      </div>
+                <div style={{ flex: 1, background: "#16181c", borderRadius: "16px", padding: "20px", border: "1px solid #2a2e38", position: "relative" }}>
+                  {battleState.gameMode !== "classic" && (
+                    <div style={{ position: "absolute", top: "-15px", left: "20px", background: "#f5ac3b", color: "black", padding: "4px 12px", borderRadius: "20px", fontWeight: "bold", fontSize: "0.8rem", textTransform: "uppercase" }}>Modo {battleState.gameMode}</div>
+                  )}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div style={{ width: "40px", height: "40px", background: "rgba(245,172,59,0.2)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem" }}>👤</div>
+                      <h3 style={{ color: "white", margin: 0 }}>Tú</h3>
                     </div>
-                  );
-                })}
+                    <div style={{ color: battleState.gameMode === "crazy" && battleState.userTotal < battleState.botTotal ? "#10b981" : "#f5ac3b", fontSize: "1.5rem", fontWeight: "bold" }}>
+                      €{battleState.userResults.slice(0, animState.visibleRounds).reduce((sum, item) => sum + item.price, 0).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ flex: 1, background: "#16181c", borderRadius: "16px", padding: "20px", border: "1px solid #2a2e38" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div style={{ width: "40px", height: "40px", background: "rgba(239,68,68,0.2)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem" }}>🤖</div>
+                      <h3 style={{ color: "white", margin: 0 }}>Bot ({battleState.botLevel})</h3>
+                    </div>
+                    <div style={{ color: battleState.gameMode === "crazy" && battleState.botTotal < battleState.userTotal ? "#10b981" : "#ef4444", fontSize: "1.5rem", fontWeight: "bold" }}>
+                      €{battleState.botResults.slice(0, animState.visibleRounds).reduce((sum, item) => sum + item.price, 0).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Rounds - N-Player Grid Breakdown */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "25px", marginTop: "20px" }}>
+              {/* Rounds - Key-Drop Style */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
                 {battleState.boxes.map((box, idx) => {
                   if (idx >= animState.visibleRounds) return null; // Don't show subsequent rounds yet
 
+                  const uSkin = battleState.userResults[idx];
+                  const bSkin = battleState.botResults[idx];
+
                   return (
                     <div key={idx} style={{
-                      background: `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.02) 50%, transparent 100%), #111318`,
-                      padding: "20px", borderRadius: "16px", border: "1px solid #2a2e38", animation: "slideUp 0.4s ease", position: "relative",
-                      overflow: "hidden"
+                      display: "flex", gap: "20px", alignItems: "center", animation: "slideUp 0.4s ease"
                     }}>
-                      {/* Background Case Hint overlay */}
-                      <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "200px", height: "100%", background: box.bgGradient || "rgba(255,255,255,0.05)", opacity: 0.1, filter: "blur(40px)", borderRadius: "50%" }}></div>
-
-                      {/* Round Header / Box Image in center/top */}
-                      <div style={{ textAlign: "center", marginBottom: "15px", display: "flex", flexDirection: "column", alignItems: "center", opacity: 0.8, position: "relative", zIndex: 1 }}>
-                        <img src={box.imageSrc} alt="case" style={{ width: "60px", filter: "drop-shadow(0 0 10px rgba(0,0,0,0.8))" }} />
-                        <div style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.7rem", marginTop: "5px", textTransform: "uppercase", fontWeight: "bold", letterSpacing: "2px" }}>Ronda {idx + 1}</div>
+                      {/* User Box */}
+                      <div style={{ flex: 1, background: "linear-gradient(135deg, #16181c 0%, #101215 100%)", border: `2px solid ${getRarityColor(uSkin.rarity)}`, padding: "10px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "15px", height: "100px" }}>
+                        <img src={uSkin.image} style={{ width: "80px", height: "60px", objectFit: "contain" }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ color: "white", fontSize: "0.9rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{uSkin.name}</div>
+                          <div style={{ color: "#f5ac3b", fontWeight: "bold", fontSize: "1.1rem" }}>€{uSkin.price.toFixed(2)}</div>
+                        </div>
                       </div>
 
-                      {/* Flex row of skins dropped for each player */}
-                      <div style={{ display: "flex", gap: "20px", alignItems: "center", position: "relative", zIndex: 1 }}>
-                        {battleState.players.map(p => {
-                          const skin = p.results[idx];
-                          return (
-                            <div key={p.id} style={{
-                              flex: 1,
-                              background: `radial-gradient(circle at center, ${getRarityColor(skin.rarity)}30 0%, #16181c 80%)`,
-                              border: `2px solid ${getRarityColor(skin.rarity)}80`,
-                              padding: "15px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "15px", height: "100px",
-                              boxShadow: `0 0 30px ${getRarityColor(skin.rarity)}10`
-                            }}>
-                              <div style={{
-                                width: "70px", height: "70px", display: "flex", justifyContent: "center", alignItems: "center",
-                                filter: `drop-shadow(0 0 10px ${getRarityColor(skin.rarity)}80)`
-                              }}>
-                                <img src={skin.image} style={{ width: "100%", height: "100%", objectFit: "contain" }} alt={skin.name} />
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8rem", textTransform: "uppercase" }}>{skin.rarity}</div>
-                                <div style={{ color: "white", fontSize: "0.95rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: "bold" }}>{skin.name}</div>
-                                <div style={{ color: "#f5ac3b", fontWeight: "bold", fontSize: "1.2rem", marginTop: "5px" }}>€{skin.price.toFixed(2)}</div>
-                              </div>
-                            </div>
-                          );
-                        })}
+                      {/* Center Box Reference */}
+                      <div style={{ width: "80px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                        <img src={box.imageSrc} style={{ width: "60px", opacity: 0.6, filter: "drop-shadow(0 0 10px rgba(0,0,0,0.8))" }} />
+                        <div style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.7rem", marginTop: "5px" }}>Rnd {idx + 1}</div>
+                      </div>
+
+                      {/* Bot Box */}
+                      <div style={{ flex: 1, background: "linear-gradient(135deg, #16181c 0%, #101215 100%)", border: `2px solid ${getRarityColor(bSkin.rarity)}`, padding: "10px", borderRadius: "12px", display: "flex", alignItems: "center", flexDirection: "row-reverse", gap: "15px", height: "100px" }}>
+                        <img src={bSkin.image} style={{ width: "80px", height: "60px", objectFit: "contain" }} />
+                        <div style={{ flex: 1, textAlign: "right" }}>
+                          <div style={{ color: "white", fontSize: "0.9rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{bSkin.name}</div>
+                          <div style={{ color: "#ef4444", fontWeight: "bold", fontSize: "1.1rem" }}>€{bSkin.price.toFixed(2)}</div>
+                        </div>
                       </div>
                     </div>
                   )

@@ -10,7 +10,7 @@ const rarityColors = {
 
 export default function SkinCard({ skin }) {
   const rarity = skin.rarity || "Mil-Spec Grade";
-  const borderColor = rarityColors[rarity] || "#00ff88";
+  const borderColor = rarityColors[rarity] || "#f5ac3b";
 
   return (
     <motion.div

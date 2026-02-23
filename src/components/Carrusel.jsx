@@ -32,10 +32,10 @@ export default function Carrusel() {
         // Mezclamos aleatoriamente
         const shuffled = validSkins.sort(() => Math.random() - 0.5);
 
-        // Tomamos 30 skins iniciales
-        setSkins(shuffled.slice(0, 30));
+        // Tomamos 100 skins iniciales para llenar bien la barra
+        setSkins(shuffled.slice(0, 100));
 
-        // Cada 5 segundos agregamos una skin random
+        // Añadir una skin nueva constantemente
         const interval = setInterval(() => {
           const newSkin = validSkins[Math.floor(Math.random() * validSkins.length)];
           const formatted = {
@@ -45,8 +45,8 @@ export default function Carrusel() {
             rarity: newSkin.rarity,
             image: newSkin.image
           };
-          setSkins(prev => [formatted, ...prev.slice(0, 29)]);
-        }, 5000);
+          setSkins(prev => [formatted, ...prev.slice(0, 99)]);
+        }, 3000);
 
         return () => clearInterval(interval);
 
@@ -61,56 +61,88 @@ export default function Carrusel() {
   const settings = {
     dots: false,
     infinite: true,
-    speed: 4000,
-    slidesToShow: 5,
-    slidesToScroll: 1,
+    speed: 3000,
+    slidesToShow: 10,
+    slidesToScroll: 2,
     autoplay: true,
     autoplaySpeed: 0,
     cssEase: "linear",
     pauseOnHover: true,
     responsive: [
-      { breakpoint: 1200, settings: { slidesToShow: 4 } },
-      { breakpoint: 992, settings: { slidesToShow: 3 } },
-      { breakpoint: 600, settings: { slidesToShow: 2 } },
-      { breakpoint: 480, settings: { slidesToShow: 1 } },
+      { breakpoint: 1600, settings: { slidesToShow: 8 } },
+      { breakpoint: 1200, settings: { slidesToShow: 6 } },
+      { breakpoint: 992, settings: { slidesToShow: 4 } },
+      { breakpoint: 600, settings: { slidesToShow: 3 } },
+      { breakpoint: 480, settings: { slidesToShow: 2 } },
     ]
   };
 
   if (!skins || skins.length === 0)
-    return <p style={{ color: "white", textAlign: "center" }}>Cargando skins...</p>;
+    return <div style={{ height: "100px", background: "#101215", borderBottom: "1px solid #1a1e24" }} />;
 
   return (
-    <div style={{ padding: "2px 0", background: "#0a0f1e" }}>
-      <h2 style={{ color: "white", marginLeft: "10px" }}>Últimas skins abiertas</h2>
+    <div style={{ padding: "0", background: "#101215", borderBottom: "1px solid #1a1e24", overflow: "hidden" }}>
       <Slider {...settings}>
         {skins.map((skin) => {
-          const borderColor = rarityColors[skin.rarity] || "#00ff88";
+          const borderColor = rarityColors[skin.rarity] || "#4b92db";
 
           return (
-            <div key={skin.id} style={{ padding: "10px" }}>
+            <div key={skin.id} style={{ outline: "none" }}>
               <div style={{
-                background: "#0f172a",
-                borderRadius: "12px",
-                padding: "10px",
-                textAlign: "center",
-                border: `2px solid ${borderColor}`,
-                boxShadow: `0 0 10px ${borderColor}`
-              }}>
+                background: "linear-gradient(180deg, #16181c 0%, #101215 100%)",
+                width: "160px",
+                height: "100px",
+                margin: "0 auto",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "8px",
+                borderBottom: `3px solid ${borderColor}`,
+                borderRight: "1px solid #1a1e24",
+                borderLeft: "1px solid #1a1e24",
+                cursor: "pointer",
+                transition: "all 0.2s ease"
+              }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = "#1a1e24";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = "linear-gradient(180deg, #16181c 0%, #101215 100%)";
+                }}
+              >
                 <img
                   src={skin.image}
                   alt={skin.name}
                   style={{
-                    width: "100%",
-                    height: "40px",
+                    width: "80px",
+                    height: "50px",
                     objectFit: "contain",
-                    marginBottom: "5px"
+                    filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.5))"
                   }}
                 />
-                <h4 style={{ fontSize: "0.9rem", marginBottom: "4px", color: "white" }}>{skin.name}</h4>
-                <p style={{ fontWeight: "bold", margin: "0", color: "white" }}>{skin.price.toLocaleString()} €</p>
-                <p style={{ color: borderColor, fontWeight: "bold", margin: "4px 0 0 0" }}>
-                  {skin.rarity.toUpperCase()}
-                </p>
+                <div style={{ width: "100%", textAlign: "center" }}>
+                  <h4 style={{
+                    fontSize: "0.65rem",
+                    margin: "0",
+                    color: "rgba(255,255,255,0.7)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis"
+                  }}>
+                    {skin.name.split(" | ")[0]}
+                  </h4>
+                  <h4 style={{
+                    fontSize: "0.75rem",
+                    margin: "2px 0 0 0",
+                    color: "white",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis"
+                  }}>
+                    {skin.name.split(" | ")[1] || skin.name}
+                  </h4>
+                </div>
               </div>
             </div>
           );

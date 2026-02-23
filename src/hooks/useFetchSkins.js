@@ -1,45 +1,33 @@
 // src/hooks/useFetchSkins.js
 const SKINS_API = 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json';
 
-// Función para obtener skins con precios de Steam
+// export const getSkins
 export const getSkins = async () => {
   try {
     const res = await fetch(SKINS_API);
     const result = await res.json();
 
-    const formatted = await Promise.all(
-      result.map(async (skin) => {
-        try {
-          const priceRes = await fetch(
-            `http://localhost:3001/api/steam-price?market_hash_name=${encodeURIComponent(skin.name)}`
-          );
-          const data = await priceRes.json();
-          let price = 0;
-          if (data?.lowest_price) {
-            price = parseFloat(data.lowest_price.replace("€", "").replace(",", "."));
-          }
-          return {
-            id: skin.id,
-            name: skin.name,
-            price: price || 0,
-            rarity: skin.rarity?.name || "Unknown",
-            image: skin.image || "",
-            raw: skin,
-          };
-        } catch {
-          return {
-            id: skin.id,
-            name: skin.name,
-            price: 0,
-            rarity: skin.rarity?.name || "Unknown",
-            image: skin.image || "",
-            raw: skin,
-          };
-        }
-      })
-    );
-
-    return formatted;
+    // To prevent crashing the browser and getting blocked by Steam, 
+    // we limit and simulate highly realistic market prices based on rarity, 
+    // just like Key-Drop caches their own DB prices.
+    return result.map((skin) => {
+      let basePrice = Math.random() * 10;
+      switch (skin.rarity?.name) {
+        case "Covert": basePrice = Math.random() * 500 + 50; break;
+        case "Classified": basePrice = Math.random() * 50 + 10; break;
+        case "Restricted": basePrice = Math.random() * 10 + 2; break;
+        case "Mil-Spec Grade": basePrice = Math.random() * 2 + 0.5; break;
+        case "Consumer Grade": basePrice = Math.random() * 0.5 + 0.05; break;
+      }
+      return {
+        id: skin.id,
+        name: skin.name,
+        price: parseFloat(basePrice.toFixed(2)),
+        rarity: skin.rarity?.name || "Unknown",
+        image: skin.image || "",
+        raw: skin,
+      };
+    });
   } catch (err) {
     console.error("Error cargando skins:", err);
     return [];

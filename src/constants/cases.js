@@ -44,7 +44,7 @@ export const CASE_IMAGES = {
     { name: "Sunrise Glory", icon: "🌅", color: "#f59e0b", bgGradient: "linear-gradient(135deg, #f59e0b 0%, #fef3c7 100%)" },
     { name: "Wisdom Scroll", icon: "📜", color: "#8b5cf6", bgGradient: "linear-gradient(135deg, #8b5cf6 0%, #ede9fe 100%)" },
   ],
-  
+
   // Intermedias - Temas: Guerrero, estrategia, poder
   intermedia: [
     { name: "Sentinel Guardian", icon: "🛡️", color: "#2563eb", bgGradient: "linear-gradient(135deg, #2563eb 0%, #93c5fd 100%)" },
@@ -68,7 +68,7 @@ export const CASE_IMAGES = {
     { name: "Mystic Oracle", icon: "🔮", color: "#b91c1c", bgGradient: "linear-gradient(135deg, #b91c1c 0%, #fecaca 100%)" },
     { name: "Divine Protector", icon: "✨", color: "#7c3aed", bgGradient: "linear-gradient(135deg, #7c3aed 0%, #ddd6fe 100%)" },
   ],
-  
+
   // Premium - Temas: Leyenda, infinito, divino
   premium: [
     { name: "Elder Legends", icon: "👑", color: "#b91c1c", bgGradient: "linear-gradient(135deg, #b91c1c 0%, #fecaca 100%)" },
@@ -111,13 +111,14 @@ export const getCaseImage = (category) => {
 // Pre-generar todas las cajas con nombres únicos
 export const generateAllCases = () => {
   const cases = [];
-  
+
   // Económicas
   CASE_IMAGES.económica.forEach((caseImg, idx) => {
     cases.push({
       id: `econ-${idx}`,
       name: caseImg.name,
       emoji: caseImg.icon,
+      imageSrc: "/case_eco.png",
       price: (0.99 + Math.random() * 2.5).toFixed(2),
       category: "económica",
       color: caseImg.color,
@@ -126,13 +127,14 @@ export const generateAllCases = () => {
       image: caseImg.icon
     });
   });
-  
+
   // Intermedias
   CASE_IMAGES.intermedia.forEach((caseImg, idx) => {
     cases.push({
       id: `inter-${idx}`,
       name: caseImg.name,
       emoji: caseImg.icon,
+      imageSrc: "/case_mid.png",
       price: (4.99 + Math.random() * 3).toFixed(2),
       category: "intermedia",
       color: caseImg.color,
@@ -141,13 +143,14 @@ export const generateAllCases = () => {
       image: caseImg.icon
     });
   });
-  
+
   // Premium
   CASE_IMAGES.premium.forEach((caseImg, idx) => {
     cases.push({
       id: `prem-${idx}`,
       name: caseImg.name,
       emoji: caseImg.icon,
+      imageSrc: "/case_premium.png",
       price: (8.99 + Math.random() * 11).toFixed(2),
       category: "premium",
       color: caseImg.color,
@@ -156,6 +159,6 @@ export const generateAllCases = () => {
       image: caseImg.icon
     });
   });
-  
+
   return cases;
 };

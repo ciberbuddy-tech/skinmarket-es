@@ -2,6 +2,7 @@ import SkinCard from "../components/SkinCard";
 import { useFetchSkins } from "../hooks/useFetchSkins";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import Carrusel from "../components/Carrusel";
 
 export default function Home() {
   const { skins, loading, error } = useFetchSkins(6, true);
@@ -14,11 +15,11 @@ export default function Home() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)"
+        background: "linear-gradient(135deg, #111318 0%, #0f1115 100%)"
       }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: "3rem", marginBottom: "20px" }}>🎮</div>
-          <div style={{ color: "#00ff88", fontSize: "1.2rem", fontWeight: "bold", animation: "pulse 1.5s infinite" }}>
+          <div style={{ color: "#f5ac3b", fontSize: "1.2rem", fontWeight: "bold", animation: "pulse 1.5s infinite" }}>
             Cargando skins increíbles...
           </div>
         </div>
@@ -33,7 +34,7 @@ export default function Home() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+        background: "linear-gradient(135deg, #111318 0%, #0f1115 100%)",
         color: "#ff5555"
       }}>
         <div style={{ textAlign: "center" }}>
@@ -47,21 +48,22 @@ export default function Home() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)",
+      background: "linear-gradient(135deg, #111318 0%, #0f1115 50%, #111318 100%)",
       padding: 0
     }}>
+      <Carrusel />
       {/* Hero Section */}
       <div style={{
         padding: "80px 40px",
         textAlign: "center",
-        background: "linear-gradient(180deg, rgba(0,255,136,0.1) 0%, transparent 100%)",
-        borderBottom: "2px solid rgba(0,255,136,0.2)"
+        background: "linear-gradient(180deg, rgba(245, 172, 59,0.1) 0%, transparent 100%)",
+        borderBottom: "2px solid rgba(245, 172, 59,0.2)"
       }}>
         <h1 style={{
           fontSize: "3.5rem",
           margin: "0 0 20px 0",
           color: "white",
-          textShadow: "0 4px 20px rgba(0,255,136,0.3)",
+          textShadow: "0 4px 20px rgba(245, 172, 59,0.3)",
           fontWeight: "900",
           letterSpacing: "-1px"
         }}>
@@ -85,21 +87,21 @@ export default function Home() {
               fontSize: "1rem",
               fontWeight: "bold",
               color: "black",
-              background: "linear-gradient(90deg, #00ff88 0%, #00dd66 100%)",
+              background: "linear-gradient(90deg, #f5ac3b 0%, #e0992a 100%)",
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
               transition: "all 0.3s ease",
-              boxShadow: "0 4px 15px rgba(0,255,136,0.3)"
+              boxShadow: "0 4px 15px rgba(245, 172, 59,0.3)"
             }}
-            onMouseOver={(e) => {
-              e.target.style.transform = "translateY(-2px)";
-              e.target.style.boxShadow = "0 6px 20px rgba(0,255,136,0.5)";
-            }}
-            onMouseOut={(e) => {
-              e.target.style.transform = "translateY(0)";
-              e.target.style.boxShadow = "0 4px 15px rgba(0,255,136,0.3)";
-            }}>
+              onMouseOver={(e) => {
+                e.target.style.transform = "translateY(-2px)";
+                e.target.style.boxShadow = "0 6px 20px rgba(245, 172, 59,0.5)";
+              }}
+              onMouseOut={(e) => {
+                e.target.style.transform = "translateY(0)";
+                e.target.style.boxShadow = "0 4px 15px rgba(245, 172, 59,0.3)";
+              }}>
               🚀 Comenzar Ahora
             </button>
           </Link>
@@ -117,13 +119,13 @@ export default function Home() {
         marginBottom: "60px"
       }}>
         <div style={{
-          background: "rgba(0,255,136,0.1)",
+          background: "rgba(245, 172, 59,0.1)",
           padding: "20px",
           borderRadius: "12px",
-          border: "2px solid rgba(0,255,136,0.3)",
+          border: "2px solid rgba(245, 172, 59,0.3)",
           textAlign: "center"
         }}>
-          <div style={{ fontSize: "2rem", color: "#00ff88", fontWeight: "bold", marginBottom: "8px" }}>
+          <div style={{ fontSize: "2rem", color: "#f5ac3b", fontWeight: "bold", marginBottom: "8px" }}>
             1000+
           </div>
           <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.9rem" }}>
@@ -194,20 +196,20 @@ export default function Home() {
           <Link to="/cases" style={{ textDecoration: "none" }}>
             <button style={{
               padding: "10px 20px",
-              background: "rgba(0,255,136,0.2)",
-              border: "2px solid #00ff88",
-              color: "#00ff88",
+              background: "rgba(245, 172, 59,0.2)",
+              border: "2px solid #f5ac3b",
+              color: "#f5ac3b",
               borderRadius: "8px",
               cursor: "pointer",
               fontWeight: "bold",
               transition: "all 0.3s ease"
             }}
-            onMouseOver={(e) => {
-              e.target.style.background = "rgba(0,255,136,0.3)";
-            }}
-            onMouseOut={(e) => {
-              e.target.style.background = "rgba(0,255,136,0.2)";
-            }}>
+              onMouseOver={(e) => {
+                e.target.style.background = "rgba(245, 172, 59,0.3)";
+              }}
+              onMouseOut={(e) => {
+                e.target.style.background = "rgba(245, 172, 59,0.2)";
+              }}>
               Ver Todas →
             </button>
           </Link>
@@ -227,8 +229,8 @@ export default function Home() {
       {/* Call to Action */}
       {user && (
         <div style={{
-          background: "linear-gradient(135deg, rgba(0,255,136,0.1) 0%, rgba(59,130,246,0.1) 100%)",
-          borderTop: "2px solid rgba(0,255,136,0.2)",
+          background: "#16181c",
+          borderTop: "2px solid #f5ac3b",
           padding: "60px 40px",
           textAlign: "center",
           marginTop: "80px"
@@ -245,21 +247,21 @@ export default function Home() {
               fontSize: "1rem",
               fontWeight: "bold",
               color: "black",
-              background: "linear-gradient(90deg, #00ff88 0%, #00dd66 100%)",
+              background: "linear-gradient(90deg, #f5ac3b 0%, #e0992a 100%)",
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
               transition: "all 0.3s ease",
-              boxShadow: "0 4px 15px rgba(0,255,136,0.3)"
+              boxShadow: "0 4px 15px rgba(245, 172, 59,0.3)"
             }}
-            onMouseOver={(e) => {
-              e.target.style.transform = "translateY(-2px)";
-              e.target.style.boxShadow = "0 6px 20px rgba(0,255,136,0.5)";
-            }}
-            onMouseOut={(e) => {
-              e.target.style.transform = "translateY(0)";
-              e.target.style.boxShadow = "0 4px 15px rgba(0,255,136,0.3)";
-            }}>
+              onMouseOver={(e) => {
+                e.target.style.transform = "translateY(-2px)";
+                e.target.style.boxShadow = "0 6px 20px rgba(245, 172, 59,0.5)";
+              }}
+              onMouseOut={(e) => {
+                e.target.style.transform = "translateY(0)";
+                e.target.style.boxShadow = "0 4px 15px rgba(245, 172, 59,0.3)";
+              }}>
               Ir a Cajas 🎁
             </button>
           </Link>

@@ -139,7 +139,7 @@ export default function Inventory() {
 
                     <p
                       style={{
-                        color: "#00ff88",
+                        color: "#f5ac3b",
                         fontWeight: "bold",
                         marginBottom: "4px",
                       }}

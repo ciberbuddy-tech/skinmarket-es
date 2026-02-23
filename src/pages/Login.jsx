@@ -70,7 +70,7 @@ export default function Login() {
     }}>
       <div style={{
         background: "linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%)",
-        border: "2px solid rgba(0, 255, 136, 0.2)",
+        border: "2px solid rgba(245, 172, 59, 0.2)",
         borderRadius: "16px",
         padding: "40px",
         maxWidth: "420px",
@@ -120,7 +120,7 @@ export default function Login() {
                 padding: "12px",
                 borderRadius: "8px",
                 border: `2px solid ${
-                  email ? (emailValid ? "#00ff88" : "#ff5555") : "rgba(0,255,136,0.2)"
+                  email ? (emailValid ? "#f5ac3b" : "#ff5555") : "rgba(245, 172, 59,0.2)"
                 }`,
                 background: "rgba(0,0,0,0.3)",
                 color: "white",
@@ -135,7 +135,7 @@ export default function Login() {
               </p>
             )}
             {email && emailValid && (
-              <p style={{ color: "#00ff88", fontSize: "0.8rem", margin: "4px 0 0 0" }}>
+              <p style={{ color: "#f5ac3b", fontSize: "0.8rem", margin: "4px 0 0 0" }}>
                 ✓ Email válido
               </p>
             )}
@@ -162,7 +162,7 @@ export default function Login() {
                 padding: "12px 40px 12px 12px",
                 borderRadius: "8px",
                 border: `2px solid ${
-                  password ? (passwordValid ? "#00ff88" : "#ff5555") : "rgba(0,255,136,0.2)"
+                  password ? (passwordValid ? "#f5ac3b" : "#ff5555") : "rgba(245, 172, 59,0.2)"
                 }`,
                 background: "rgba(0,0,0,0.3)",
                 color: "white",
@@ -185,7 +185,7 @@ export default function Login() {
                 color: "rgba(255,255,255,0.6)",
                 transition: "color 0.2s ease"
               }}
-              onMouseOver={(e) => e.target.style.color = "#00ff88"}
+              onMouseOver={(e) => e.target.style.color = "#f5ac3b"}
               onMouseOut={(e) => e.target.style.color = "rgba(255,255,255,0.6)"}
             >
               {showPassword ? "👁️" : "👁️‍🗨️"}
@@ -196,7 +196,7 @@ export default function Login() {
               </p>
             )}
             {password && passwordValid && (
-              <p style={{ color: "#00ff88", fontSize: "0.8rem", margin: "4px 0 0 0" }}>
+              <p style={{ color: "#f5ac3b", fontSize: "0.8rem", margin: "4px 0 0 0" }}>
                 ✓ Contraseña válida
               </p>
             )}
@@ -219,9 +219,9 @@ export default function Login() {
 
           {success && (
             <div style={{
-              background: "rgba(0, 255, 136, 0.1)",
-              border: "2px solid #00ff88",
-              color: "#00ff88",
+              background: "rgba(245, 172, 59, 0.1)",
+              border: "2px solid #f5ac3b",
+              color: "#f5ac3b",
               padding: "12px",
               borderRadius: "8px",
               marginBottom: "20px",
@@ -240,8 +240,8 @@ export default function Login() {
               padding: "12px",
               borderRadius: "8px",
               background: emailValid && passwordValid && !loading
-                ? "linear-gradient(90deg, #00ff88 0%, #00dd66 100%)"
-                : "rgba(0, 255, 136, 0.2)",
+                ? "linear-gradient(90deg, #f5ac3b 0%, #e0992a 100%)"
+                : "rgba(245, 172, 59, 0.2)",
               color: emailValid && passwordValid && !loading ? "black" : "rgba(255,255,255,0.5)",
               border: "none",
               cursor: emailValid && passwordValid && !loading ? "pointer" : "not-allowed",
@@ -249,19 +249,19 @@ export default function Login() {
               fontSize: "1rem",
               transition: "all 0.3s ease",
               boxShadow: emailValid && passwordValid && !loading
-                ? "0 4px 15px rgba(0,255,136,0.3)"
+                ? "0 4px 15px rgba(245, 172, 59,0.3)"
                 : "none"
             }}
             onMouseOver={(e) => {
               if (emailValid && passwordValid && !loading) {
                 e.target.style.transform = "translateY(-2px)";
-                e.target.style.boxShadow = "0 6px 20px rgba(0,255,136,0.5)";
+                e.target.style.boxShadow = "0 6px 20px rgba(245, 172, 59,0.5)";
               }
             }}
             onMouseOut={(e) => {
               e.target.style.transform = "translateY(0)";
               e.target.style.boxShadow = emailValid && passwordValid && !loading
-                ? "0 4px 15px rgba(0,255,136,0.3)"
+                ? "0 4px 15px rgba(245, 172, 59,0.3)"
                 : "none";
             }}
           >

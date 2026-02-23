@@ -49,7 +49,7 @@ export default function Dashboard() {
                 marginTop: '10px'
               }}>
                 {topSkins.map((skin) => {
-                  const borderColor = rarityColors[skin.rarity] || "#00ff88";
+                  const borderColor = rarityColors[skin.rarity] || "#f5ac3b";
 
                   return (
                     <div key={skin.id} style={{
