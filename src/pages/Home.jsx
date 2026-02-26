@@ -259,29 +259,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer Branding */}
-      <footer style={{
-        padding: '120px 40px',
-        background: '#0a0c10',
-        borderTop: '1px solid rgba(255,255,255,0.03)',
-        textAlign: 'center'
-      }}>
-        <div style={{
-          fontSize: '2.5rem',
-          fontWeight: '900',
-          marginBottom: '30px',
-          letterSpacing: '-1.5px',
-          background: 'linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.4) 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent'
-        }}>
-          SKINMART<span style={{ color: '#f5ac3b' }}>ES</span>
-        </div>
-        <p style={{ color: 'rgba(255,255,255,0.2)', maxWidth: '700px', margin: '0 auto', fontSize: '1rem', lineHeight: '1.8' }}>
-          © 2026 SkinMarket ES. Todos los derechos reservados. No estamos afiliados con Valve Corp.
-          CS:GO es una marca registrada de Valve Corporation. Juega de forma responsable y solo si eres mayor de edad.
-        </p>
-      </footer>
+      {/* Footer Branding - Removed as it's now global */}
+
 
       <style>{`
         body {
