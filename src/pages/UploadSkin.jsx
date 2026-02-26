@@ -1,7 +1,9 @@
 // src/pages/UploadSkin.jsx
 import { useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import { getRarityColor } from "../constants/colors.js"; // Optional if you have it
+import { useAuth } from "../context/useAuth";
+import { getRarityColor } from "../constants/colors.js";
+import { motion, AnimatePresence } from "framer-motion";
+import { API_URL } from "../context/AuthContext";
 
 export default function UploadSkin() {
   const { user, updateUser } = useAuth();
@@ -11,18 +13,17 @@ export default function UploadSkin() {
   const [selectedSkins, setSelectedSkins] = useState([]);
 
   const handleImportSteam = async () => {
-    if (!steamId) return alert("Por favor, introduce tu SteamID64.");
+    if (!steamId) return;
 
     setLoading(true);
     setSteamInventory([]);
     setSelectedSkins([]);
 
     try {
-      const res = await fetch(`http://localhost:3001/api/steam-inventory/${steamId}`);
-
+      const res = await fetch(`${API_URL}/steam-inventory/${steamId}`);
       const text = await res.text();
+
       if (text.startsWith("<!DOCTYPE")) {
-        alert("El inventario de Steam es privado o no se puede acceder.");
         setLoading(false);
         return;
       }
@@ -30,24 +31,21 @@ export default function UploadSkin() {
       const data = JSON.parse(text);
 
       if (!data || !data.assets || Object.keys(data.assets).length === 0) {
-        alert("No se pudo cargar el inventario. Asegúrate de que sea público y tengas ítems de CS:GO.");
         setLoading(false);
         return;
       }
 
-      // Map descriptions
       const descriptionsMap = {};
       Object.values(data.descriptions || {}).forEach(desc => {
         descriptionsMap[`${desc.classid}_${desc.instanceid}`] = desc;
       });
 
-      // Parse assets
       const skins = (data.assets || []).map(item => {
         const desc = descriptionsMap[`${item.classid}_${item.instanceid}`];
         return {
           id: item.assetid,
           name: desc?.market_name || desc?.name || "Unknown Skin",
-          price: parseFloat((Math.random() * 50 + 0.5).toFixed(2)), // precio simulado rápido
+          price: parseFloat((Math.random() * 50 + 0.5).toFixed(2)),
           rarity: desc?.tags?.find(tag => tag.category === "Rarity")?.name || "Mil-Spec Grade",
           image: desc?.icon_url
             ? `https://steamcommunity-a.akamaihd.net/economy/image/${desc.icon_url}/256fx256f`
@@ -55,16 +53,9 @@ export default function UploadSkin() {
         };
       }).filter(skin => skin.image);
 
-      if (skins.length === 0) {
-        alert("No se encontraron skins válidas en este inventario.");
-        setLoading(false);
-        return;
-      }
-
       setSteamInventory(skins);
     } catch (err) {
       console.error(err);
-      alert("Error al cargar el inventario. Asegúrate de usar una SteamID64 válida.");
     } finally {
       setLoading(false);
     }
@@ -85,17 +76,15 @@ export default function UploadSkin() {
 
     const updatedUser = {
       ...user,
-      balance: parseFloat((user.balance + totalValue).toFixed(2))
+      balance: parseFloat((user.balance + totalValue).toFixed(2)),
+      inventory: [...(user.inventory || []), ...selectedSkins]
     };
 
     updateUser(updatedUser);
 
-    // Quitar skins del feed de la página para simular que se enviaron
     const remaining = steamInventory.filter(s => !selectedSkins.find(sel => sel.id === s.id));
     setSteamInventory(remaining);
     setSelectedSkins([]);
-
-    alert(`¡Depósito exitoso! Se han añadido €${totalValue.toFixed(2)} a tu cartera.`);
   };
 
   const totalDepositValue = selectedSkins.reduce((acc, s) => acc + s.price, 0);
@@ -104,211 +93,273 @@ export default function UploadSkin() {
     <div style={{
       width: '100%',
       minHeight: '100vh',
-      padding: '40px 20px',
+      padding: '60px 20px',
       background: '#0f1115',
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      fontFamily: "'Inter', sans-serif"
     }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
 
-        {/* Header Section */}
-        <div style={{
-          background: "linear-gradient(135deg, rgba(245, 172, 59, 0.1) 0%, rgba(0,0,0,0.5) 100%)",
-          padding: "40px",
-          borderRadius: "16px",
-          border: "1px solid rgba(245, 172, 59, 0.2)",
-          marginBottom: "40px",
-          textAlign: "center"
-        }}>
-          <h1 style={{ color: "white", fontSize: "2.5rem", margin: "0 0 10px 0" }}>
-            💰 Depositar Skins
-          </h1>
-          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: "1rem", margin: "0 0 30px 0" }}>
-            Conecta tu inventario público de Steam, selecciona las skins que quieres vender y añade saldo en segundos.
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            background: "rgba(255,255,255,0.02)",
+            padding: "80px 40px",
+            borderRadius: "40px",
+            border: "1px solid rgba(255,255,255,0.05)",
+            marginBottom: "60px",
+            textAlign: "center",
+            position: 'relative',
+            overflow: 'hidden',
+            backdropFilter: 'blur(20px)'
+          }}
+        >
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '400px',
+            height: '400px',
+            background: '#f5ac3b',
+            filter: 'blur(150px)',
+            opacity: 0.05,
+            zIndex: 0
+          }} />
+
+          <motion.h1
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{
+              color: "white",
+              fontSize: "4rem",
+              fontWeight: '900',
+              margin: "0 0 15px 0",
+              letterSpacing: '-2px',
+              background: 'linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.5) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              position: 'relative',
+              zIndex: 1
+            }}
+          >
+            DEPOSITAR SKINS
+          </motion.h1>
+          <p style={{
+            color: "rgba(255,255,255,0.4)",
+            fontSize: "1.2rem",
+            fontWeight: '600',
+            maxWidth: '600px',
+            margin: '0 auto 40px',
+            position: 'relative',
+            zIndex: 1
+          }}>
+            Conecta tu inventario de Steam y añade saldo a tu cuenta al instante.
           </p>
 
-          <div style={{ display: "flex", gap: "10px", justifyContent: "center", maxWidth: "600px", margin: "0 auto" }}>
+          <div style={{
+            display: "flex",
+            gap: "15px",
+            justifyContent: "center",
+            maxWidth: "700px",
+            margin: "0 auto",
+            position: 'relative',
+            zIndex: 1
+          }}>
             <input
               type="text"
-              placeholder="Introduce tu SteamID64 público (Ej: 76561198...)"
+              placeholder="Introduce tu SteamID64..."
               value={steamId}
               onChange={e => setSteamId(e.target.value)}
               style={{
                 flex: "1",
-                padding: "14px 20px",
-                borderRadius: "8px",
-                border: "2px solid #2a2e38",
-                background: "#16181c",
+                padding: "24px 30px",
+                borderRadius: "20px",
+                border: "1px solid rgba(255,255,255,0.05)",
+                background: "rgba(0,0,0,0.3)",
                 color: "white",
-                fontSize: "1rem",
-                outline: "none"
+                fontSize: "1.1rem",
+                fontWeight: '600',
+                outline: "none",
+                transition: 'all 0.3s'
               }}
               onFocus={(e) => e.target.style.borderColor = "#f5ac3b"}
-              onBlur={(e) => e.target.style.borderColor = "#2a2e38"}
+              onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.05)"}
             />
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={handleImportSteam}
               disabled={loading}
               style={{
-                padding: "14px 30px",
-                background: "linear-gradient(90deg, #f5ac3b, #e0992a)",
-                color: "#0f1115",
+                padding: "0 40px",
+                background: "linear-gradient(90deg, #f5ac3b, #ffba52)",
+                color: "#1a1c24",
                 border: "none",
-                borderRadius: "8px",
-                fontWeight: "bold",
-                fontSize: "1rem",
+                borderRadius: "20px",
+                fontWeight: "900",
+                fontSize: "1.1rem",
                 cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.7 : 1,
-                transition: "all 0.2s"
+                boxShadow: "0 10px 30px rgba(245, 172, 59, 0.3)"
               }}
             >
-              {loading ? "Cargando..." : "Cargar Inventario"}
-            </button>
+              {loading ? "CARGANDO..." : "CARGAR"}
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Content Section */}
-        {steamInventory.length > 0 && (
-          <div style={{
-            background: "#16181c",
-            borderRadius: "16px",
-            padding: "30px",
-            border: "1px solid #1a1d24"
-          }}>
-
-            <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "30px",
-              paddingBottom: "20px",
-              borderBottom: "1px solid #2a2e38"
-            }}>
-              <h2 style={{ color: "white", margin: 0, fontSize: "1.5rem" }}>
-                Tu Inventario de Steam
-              </h2>
-              <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
-                <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.9rem" }}>
-                  Seleccionadas: <strong style={{ color: "white" }}>{selectedSkins.length}</strong>
+        <AnimatePresence>
+          {steamInventory.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                background: "rgba(255,255,255,0.01)",
+                borderRadius: "40px",
+                padding: "40px",
+                border: "1px solid rgba(255,255,255,0.05)",
+                backdropFilter: 'blur(20px)'
+              }}
+            >
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "40px",
+                paddingBottom: "30px",
+                borderBottom: "1px solid rgba(255,255,255,0.05)"
+              }}>
+                <div>
+                  <h2 style={{ color: "white", margin: 0, fontSize: "2rem", fontWeight: '900', letterSpacing: '-1px' }}>
+                    TU INVENTARIO
+                  </h2>
+                  <div style={{ color: 'rgba(255,255,255,0.3)', fontWeight: '700', fontSize: '0.9rem', marginTop: '5px' }}>
+                    {steamInventory.length} ITEMS ENCONTRADOS
+                  </div>
                 </div>
-                <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.9rem" }}>
-                  Valor Total: <strong style={{ color: "#f5ac3b", fontSize: "1.2rem" }}>€{totalDepositValue.toFixed(2)}</strong>
-                </div>
-                <button
-                  onClick={handleDeposit}
-                  disabled={selectedSkins.length === 0}
-                  style={{
-                    padding: "12px 24px",
-                    background: selectedSkins.length === 0 ? "#2a2e38" : "#f5ac3b",
-                    color: selectedSkins.length === 0 ? "rgba(255,255,255,0.4)" : "#0f1115",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontWeight: "bold",
-                    cursor: selectedSkins.length === 0 ? "not-allowed" : "pointer",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  Depositar €{totalDepositValue.toFixed(2)}
-                </button>
-              </div>
-            </div>
 
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-              gap: "15px",
-              maxHeight: "60vh",
-              overflowY: "auto",
-              paddingRight: "10px"
-            }}>
-              {steamInventory.map(skin => {
-                const isSelected = !!selectedSkins.find(s => s.id === skin.id);
-                // Simple color logic, if you don't have getRarityColor function imported correctly
-                const getSkinColor = (rarity) => {
-                  switch (rarity) {
-                    case "Covert": return "#eb4b4b";
-                    case "Classified": return "#d32ce6";
-                    case "Restricted": return "#8847ff";
-                    case "Mil-Spec Grade": return "#4b69ff";
-                    case "Industrial Grade": return "#5e98d9";
-                    default: return "#b0c3d9";
-                  }
-                };
-                const color = getSkinColor(skin.rarity);
-
-                return (
-                  <div
-                    key={skin.id}
-                    onClick={() => toggleSelectSkin(skin)}
+                <div style={{ display: "flex", gap: "30px", alignItems: "center" }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ color: "rgba(255,255,255,0.3)", fontSize: "0.8rem", fontWeight: '800', marginBottom: '5px', letterSpacing: '2px' }}>SELECCIONADO</div>
+                    <div style={{ color: "white", fontSize: "1.5rem", fontWeight: "900" }}>
+                      €{totalDepositValue.toFixed(2)}
+                    </div>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleDeposit}
+                    disabled={selectedSkins.length === 0}
                     style={{
-                      background: isSelected ? "rgba(245, 172, 59, 0.1)" : "#1a1d24",
-                      border: `2px solid ${isSelected ? "#f5ac3b" : "transparent"}`,
-                      borderBottom: `3px solid ${color}`,
-                      borderRadius: "10px",
-                      padding: "15px",
-                      cursor: "pointer",
-                      textAlign: "center",
-                      transition: "all 0.2s",
-                      position: "relative"
+                      padding: "20px 40px",
+                      background: selectedSkins.length === 0 ? "rgba(255,255,255,0.05)" : "#f5ac3b",
+                      color: selectedSkins.length === 0 ? "rgba(255,255,255,0.2)" : "#1a1c24",
+                      border: "none",
+                      borderRadius: "20px",
+                      fontWeight: "900",
+                      fontSize: "1.1rem",
+                      cursor: selectedSkins.length === 0 ? "not-allowed" : "pointer",
+                      transition: "all 0.3s",
+                      boxShadow: selectedSkins.length === 0 ? 'none' : '0 10px 30px rgba(245, 172, 59, 0.3)'
                     }}
                   >
-                    {isSelected && (
-                      <div style={{
-                        position: "absolute",
-                        top: "10px",
-                        right: "10px",
-                        background: "#f5ac3b",
-                        color: "#0f1115",
-                        width: "20px",
-                        height: "20px",
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: "bold",
-                        fontSize: "0.8rem",
-                        zIndex: 2
-                      }}>✓</div>
-                    )}
-                    <img
-                      src={skin.image}
-                      alt={skin.name}
-                      style={{
-                        width: "100%",
-                        height: "80px",
-                        objectFit: "contain",
-                        marginBottom: "10px",
-                        filter: "drop-shadow(0 4px 5px rgba(0,0,0,0.4))"
-                      }}
-                    />
-                    <div style={{
-                      color: "rgba(255,255,255,0.7)",
-                      fontSize: "0.75rem",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      marginBottom: "5px"
-                    }}>{skin.name.split(" | ")[0]}</div>
-                    <div style={{
-                      color: "white",
-                      fontSize: "0.85rem",
-                      fontWeight: "bold",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      marginBottom: "10px"
-                    }}>{skin.name.split(" | ")[1] || skin.name}</div>
-                    <div style={{
-                      color: "#f5ac3b",
-                      fontWeight: "bold",
-                      fontSize: "1rem"
-                    }}>€{skin.price.toFixed(2)}</div>
-                  </div>
-                );
-              })}
-            </div>
+                    VENDER ITEMS
+                  </motion.button>
+                </div>
+              </div>
 
-          </div>
-        )}
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                gap: "20px",
+                maxHeight: "60vh",
+                overflowY: "auto",
+                paddingRight: "10px"
+              }}>
+                {steamInventory.map((skin, i) => {
+                  const isSelected = !!selectedSkins.find(s => s.id === skin.id);
+                  const color = getRarityColor(skin.rarity);
+
+                  return (
+                    <motion.div
+                      key={skin.id}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.02 }}
+                      whileHover={{ translateY: -5 }}
+                      onClick={() => toggleSelectSkin(skin)}
+                      style={{
+                        background: isSelected ? `${color}15` : "rgba(255,255,255,0.02)",
+                        border: `2px solid ${isSelected ? color : "rgba(255,255,255,0.05)"}`,
+                        borderRadius: "24px",
+                        padding: "25px",
+                        cursor: "pointer",
+                        textAlign: "center",
+                        transition: "all 0.2s",
+                        position: "relative",
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {isSelected && (
+                        <div style={{
+                          position: "absolute",
+                          top: "15px",
+                          right: "15px",
+                          background: color,
+                          color: "white",
+                          width: "24px",
+                          height: "24px",
+                          borderRadius: "8px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: "900",
+                          fontSize: "0.8rem",
+                          zIndex: 2,
+                          boxShadow: `0 0 15px ${color}`
+                        }}>✓</div>
+                      )}
+                      <img
+                        src={skin.image}
+                        alt={skin.name}
+                        style={{
+                          width: "100%",
+                          height: "100px",
+                          objectFit: "contain",
+                          marginBottom: "15px",
+                          filter: `drop-shadow(0 10px 15px rgba(0,0,0,0.5))`
+                        }}
+                      />
+                      <div style={{
+                        color: "rgba(255,255,255,0.4)",
+                        fontSize: "0.7rem",
+                        fontWeight: '800',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px',
+                        marginBottom: '5px'
+                      }}>{skin.name.split(" | ")[0]}</div>
+                      <div style={{
+                        color: "white",
+                        fontSize: "0.9rem",
+                        fontWeight: "900",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        marginBottom: "15px"
+                      }}>{skin.name.split(" | ")[1] || skin.name}</div>
+                      <div style={{
+                        color: "#f5ac3b",
+                        fontWeight: "900",
+                        fontSize: "1.2rem"
+                      }}>€{skin.price.toFixed(2)}</div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

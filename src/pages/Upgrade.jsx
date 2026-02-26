@@ -1,25 +1,21 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import { useAuth } from "../context/AuthContext";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../context/useAuth";
 import { useFetchSkins } from "../hooks/useFetchSkins";
 import { getRarityColor } from "../constants/colors.js";
-import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
-import "react-circular-progressbar/dist/styles.css";
 
-// The Spinner Tick Marker Component
 const UpgradeSpinner = ({ chance, isSpinning, resultDegree, onComplete }) => {
   const tickRef = useRef(null);
 
   useEffect(() => {
     if (isSpinning && tickRef.current) {
-      // Rotate 5 full circles (1800 deg) + the result degree
       const targetRotation = 1800 + resultDegree;
-
-      tickRef.current.style.transition = "transform 4s cubic-bezier(0.15, 0.85, 0.15, 1)";
+      tickRef.current.style.transition = "transform 4s cubic-bezier(0.12, 0.8, 0.15, 1)";
       tickRef.current.style.transform = `rotate(${targetRotation}deg)`;
 
       const timer = setTimeout(() => {
         onComplete();
-      }, 4100);
+      }, 4500);
 
       return () => clearTimeout(timer);
     } else if (!isSpinning && tickRef.current) {
@@ -28,22 +24,41 @@ const UpgradeSpinner = ({ chance, isSpinning, resultDegree, onComplete }) => {
     }
   }, [isSpinning, resultDegree, onComplete]);
 
-  // Convert chance (0-100) to degrees (0-360) for the SVG green path
-  const winDegrees = chance * 3.6;
-
   return (
-    <div style={{ position: "relative", width: "240px", height: "240px", borderRadius: "50%", margin: "0 auto", background: "#0a0c0f", boxShadow: "0 0 50px rgba(0,0,0,0.5)" }}>
-      {/* Background Circle (Loss Area) */}
-      <svg viewBox="0 0 100 100" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
-        <circle cx="50" cy="50" r="45" fill="none" stroke="#ef4444" strokeWidth="10" opacity="0.2" />
+    <div style={{
+      position: "relative",
+      width: "360px",
+      height: "360px",
+      borderRadius: "50%",
+      margin: "0 auto",
+      background: "#0c0d10",
+      boxShadow: "0 0 100px rgba(0,0,0,0.8), inset 0 0 50px rgba(255,255,255,0.02)",
+      border: '4px solid rgba(255,255,255,0.05)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+      {/* Glow effect based on probability */}
+      <div style={{
+        position: 'absolute',
+        inset: '-20px',
+        borderRadius: '50%',
+        background: `conic-gradient(#f5ac3b ${chance}%, #3b82f6 ${chance}%)`,
+        opacity: 0.1,
+        filter: 'blur(40px)',
+        zIndex: 0
+      }} />
 
-        {/* Foreground Circle (Win Area) */}
+      {/* SVG Wheel */}
+      <svg viewBox="0 0 100 100" style={{ position: "absolute", top: 10, left: 10, width: "calc(100% - 20px)", height: "calc(100% - 20px)", transform: "rotate(-90deg)", zIndex: 1 }}>
+        <circle cx="50" cy="50" r="45" fill="none" stroke="#3b82f6" strokeWidth="6" strokeOpacity="0.2" />
         {chance > 0 && (
           <circle
-            cx="50" cy="50" r="45" fill="none" stroke="#10b981" strokeWidth="10"
-            strokeDasharray={`${(chance / 100) * 283} 283`} // 2 * PI * r = 282.7
-            strokeLinecap="butt"
-            style={{ transition: "stroke-dasharray 0.3s ease" }}
+            cx="50" cy="50" r="45" fill="none"
+            stroke="#f5ac3b" strokeWidth="6"
+            strokeDasharray={`${(chance / 100) * 283} 283`}
+            strokeLinecap="round"
+            style={{ transition: "all 0.5s ease", filter: 'drop-shadow(0 0 10px rgba(245, 172, 59, 0.5))' }}
           />
         )}
       </svg>
@@ -57,22 +72,39 @@ const UpgradeSpinner = ({ chance, isSpinning, resultDegree, onComplete }) => {
         }}
       >
         <div style={{
-          position: "absolute", top: "-10px", left: "50%", transform: "translateX(-50%)",
-          width: "0", height: "0",
-          borderLeft: "10px solid transparent",
-          borderRight: "10px solid transparent",
-          borderTop: "20px solid white",
-          filter: "drop-shadow(0 0 5px rgba(255,255,255,0.8))"
+          position: "absolute", top: "5px", left: "50%", transform: "translateX(-50%)",
+          width: "4px", height: "40px",
+          background: "white",
+          borderRadius: '4px',
+          boxShadow: "0 0 20px rgba(255,255,255,1)"
         }}></div>
       </div>
 
       {/* Center Label */}
-      <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center" }}>
-        <div style={{ fontSize: "2.5rem", fontWeight: "bold", color: "#10b981", filter: "drop-shadow(0 0 10px rgba(16,185,129,0.5))" }}>
-          {chance < 1 ? chance.toFixed(4) : chance.toFixed(2)}%
-        </div>
-        <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "1px" }}>
-          Probabilidad
+      <div style={{ position: "relative", zIndex: 5, textAlign: "center" }}>
+        <motion.div
+          key={chance}
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          style={{
+            fontSize: "4.5rem",
+            fontWeight: "900",
+            color: "white",
+            lineHeight: '1',
+            letterSpacing: '-3px'
+          }}
+        >
+          {chance.toFixed(2)}<span style={{ fontSize: '1.5rem', color: '#f5ac3b' }}>%</span>
+        </motion.div>
+        <div style={{
+          fontSize: "0.8rem",
+          color: "rgba(255,255,255,0.3)",
+          textTransform: "uppercase",
+          letterSpacing: "4px",
+          marginTop: '10px',
+          fontWeight: '900'
+        }}>
+          PROBABILIDAD
         </div>
       </div>
     </div>
@@ -81,305 +113,421 @@ const UpgradeSpinner = ({ chance, isSpinning, resultDegree, onComplete }) => {
 
 export default function Upgrade() {
   const { user, updateUser } = useAuth();
-
-  // We fetch a lot of skins to use as realistic targets for Upgrade
-  const { skins: allSkins, loading: skinsLoading } = useFetchSkins(1000, false);
+  const { skins: allSkins } = useFetchSkins(1000, false);
 
   const [selectedIds, setSelectedIds] = useState([]);
-  const [targetSkin, setTargetSkin] = useState(null);
-
-  // Drag selection state
-  const [isDragging, setIsDragging] = useState(false);
-
-  // Upgrade spinning state
+  const [targetSkins, setTargetSkins] = useState([]);
   const [isSpinning, setIsSpinning] = useState(false);
   const [resultDegree, setResultDegree] = useState(0);
-  const [pendingResult, setPendingResult] = useState(null); // holds data until animation finishes
-  const [lastResult, setLastResult] = useState(null); // { success: true/false, skin: {} }
+  const [pendingResult, setPendingResult] = useState(null);
+  const [lastResult, setLastResult] = useState(null);
   const [searchRight, setSearchRight] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragAction, setDragAction] = useState(null); // 'select' or 'deselect'
+  const [page, setPage] = useState(0);
+  const itemsPerPage = 20;
 
   useEffect(() => {
-    const handleMouseUp = () => setIsDragging(false);
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => window.removeEventListener("mouseup", handleMouseUp);
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      setDragAction(null);
+    };
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
   }, []);
 
-  // Targets formatted from big skin pool
   const validTargets = useMemo(() => {
-    let pool = allSkins.filter(s => s.price > 0.5);
+    let pool = allSkins.filter(s => s.price > 0.5 && s.image && s.name);
     if (searchRight) {
       pool = pool.filter(s => s.name.toLowerCase().includes(searchRight.toLowerCase()));
     }
-    // Sort cheapest to max
-    return pool.sort((a, b) => a.price - b.price).slice(0, 150); // limit to 150 rendering
+    return pool.sort((a, b) => a.price - b.price);
   }, [allSkins, searchRight]);
 
-  if (!user) return <div style={{ padding: "40px", color: "white", textAlign: "center", fontSize: "2rem" }}>Inicia sesión para jugar Upgrades</div>;
+  const paginatedTargets = useMemo(() => {
+    const start = page * itemsPerPage;
+    return validTargets.slice(start, start + itemsPerPage);
+  }, [validTargets, page]);
 
-  const handleMouseDown = (id) => { setIsDragging(true); toggleSkin(id); };
-  const handleMouseEnter = (id) => { if (isDragging) toggleSkin(id); };
-  const toggleSkin = (id) => {
-    if (!isSpinning) setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  const maxPages = Math.ceil(validTargets.length / itemsPerPage);
+
+  const toggleTargetSkin = (skin) => {
+    if (isSpinning) return;
+    setTargetSkins(prev => {
+      const exists = prev.find(s => s.id === skin.id);
+      if (exists) return prev.filter(s => s.id !== skin.id);
+      if (prev.length >= 4) return prev;
+      return [...prev, skin];
+    });
   };
 
-  const selectAllSkins = () => {
-    if (!isSpinning) setSelectedIds(user.inventory.map(s => s.id));
+  const handleSkinMouseDown = (id) => {
+    if (isSpinning) return;
+    const isSelected = selectedIds.includes(id);
+    const newAction = isSelected ? 'deselect' : 'select';
+    setDragAction(newAction);
+    setIsDragging(true);
+    if (newAction === 'select') {
+      setSelectedIds(prev => [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(i => i !== id));
+    }
   };
-  const clearSelection = () => {
-    if (!isSpinning) setSelectedIds([]);
-  }
 
-  // Value formatting
-  const totalBetValue = selectedIds.length > 0 ? user.inventory.filter(s => selectedIds.includes(s.id)).reduce((sum, s) => sum + (s.price || 0), 0) : 0;
+  const handleSkinMouseEnter = (id) => {
+    if (!isDragging || isSpinning) return;
+    if (dragAction === 'select') {
+      setSelectedIds(prev => prev.includes(id) ? prev : [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(i => i !== id));
+    }
+  };
+
+  const handleTargetMouseDown = (skin) => {
+    if (isSpinning) return;
+    const isSelected = targetSkins.find(s => s.id === skin.id);
+    const newAction = isSelected ? 'deselect' : 'select';
+    setDragAction(newAction);
+    setIsDragging(true);
+    toggleTargetSkin(skin);
+  };
+
+  const handleTargetMouseEnter = (skin) => {
+    if (!isDragging || isSpinning) return;
+    const isSelected = targetSkins.find(s => s.id === skin.id);
+    if (dragAction === 'select' && !isSelected) {
+      toggleTargetSkin(skin);
+    } else if (dragAction === 'deselect' && isSelected) {
+      toggleTargetSkin(skin);
+    }
+  };
 
   const calculateChance = () => {
-    if (selectedIds.length === 0 || !targetSkin) return 0;
-
-    // Exact math for casino upgrader
-    const ratio = totalBetValue / targetSkin.price;
-    let chance = ratio * 100;
-
-    // Small house edge penalty mapping (e.g. 10% fee means expected value decreases)
-    chance = chance * 0.95; // 5% house edge on upgrades typically
-
-    return Math.max(Math.min(chance, 95), 0.0001); // Realistic floor and higher ceiling
+    if (selectedIds.length === 0 || targetSkins.length === 0) return 0;
+    const totalBetValue = (user?.inventory || []).filter(s => selectedIds.includes(s.id)).reduce((sum, s) => sum + (s.price || 0), 0);
+    const totalTargetValue = targetSkins.reduce((sum, s) => sum + (s.price || 0), 0);
+    const ratio = totalBetValue / totalTargetValue;
+    return Math.max(Math.min(ratio * 95, 95), 0.01);
   };
 
   const chance = calculateChance();
+  const totalBetValue = selectedIds.length > 0 ? (user?.inventory || []).filter(s => selectedIds.includes(s.id)).reduce((sum, s) => sum + (s.price || 0), 0) : 0;
+  const totalTargetValue = targetSkins.reduce((sum, s) => sum + (s.price || 0), 0);
 
   const handleSpinClick = () => {
-    if (selectedIds.length === 0 || !targetSkin || isSpinning) return;
-
+    if (selectedIds.length === 0 || targetSkins.length === 0 || isSpinning) return;
     setLastResult(null);
     setIsSpinning(true);
-
-    // Roll random 0 - 360
     const finalDeg = Math.random() * 360;
     setResultDegree(finalDeg);
-
     const winDegrees = chance * 3.6;
     const success = finalDeg <= winDegrees;
-
-    // Buffer the final result until animation resolves
-    setPendingResult({ success, wonSkin: { ...targetSkin, id: `upg-${Date.now()}` } });
+    setPendingResult({
+      success,
+      wonSkins: targetSkins.map(s => ({ ...s, id: `upg-${Date.now()}-${Math.random()}` }))
+    });
   };
 
   const handleAnimationComplete = () => {
     setIsSpinning(false);
-
     if (pendingResult) {
-      const newInventory = user.inventory.filter(s => !selectedIds.includes(s.id));
-
+      const newInventory = (user?.inventory || []).filter(s => !selectedIds.includes(s.id));
       if (pendingResult.success) {
-        newInventory.push(pendingResult.wonSkin);
-        setLastResult({ success: true, skin: pendingResult.wonSkin });
+        newInventory.push(...pendingResult.wonSkins);
+        setLastResult({ success: true, skins: pendingResult.wonSkins });
       } else {
         setLastResult({ success: false });
       }
-
       updateUser({ ...user, inventory: newInventory });
       setSelectedIds([]);
-      // We optionally reset targetSkin or leave it for quick replay
+      setTargetSkins([]);
       setPendingResult(null);
     }
   };
 
+  if (!user) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f1115', color: "white", fontSize: "2rem", fontWeight: '900' }}>INICIA SESIÓN PARA JUGAR</div>;
 
   return (
     <div style={{
-      minHeight: '100vh',
-      width: '100%',
-      background: '#0a0c0f',
-      color: 'white',
-      padding: '40px 20px'
+      minHeight: "100vh",
+      background: "#0f1115",
+      padding: "40px",
+      display: 'flex',
+      flexDirection: 'column',
+      fontFamily: "'Inter', sans-serif"
     }}>
-      <div style={{ maxWidth: "1600px", margin: "0 auto", display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 500px minmax(300px, 1fr)', gap: '30px', height: 'calc(100vh - 80px)' }}>
+      <div style={{
+        maxWidth: "1600px",
+        width: '100%',
+        margin: "0 auto",
+        display: 'grid',
+        gridTemplateColumns: 'minmax(350px, 1fr) 1.5fr minmax(350px, 1fr)',
+        gap: '40px',
+        flex: 1
+      }}>
 
-        {/* LEFT COLUMN - USER INVENTORY */}
-        <div style={{
-          display: 'flex', flexDirection: 'column',
-          background: '#111318', padding: '24px', borderRadius: '20px', border: '1px solid #1f232b',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.4)', overflow: 'hidden'
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: '20px' }}>
+        {/* INVENTORY COLUMN */}
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          style={{
+            display: 'flex', flexDirection: 'column',
+            background: 'rgba(255,255,255,0.02)', padding: '30px', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.05)',
+            maxHeight: 'calc(100vh - 80px)', backdropFilter: 'blur(20px)'
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: '30px' }}>
             <div>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
-                <div style={{ width: "30px", height: "30px", background: "rgba(245,172,59,0.2)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>🎒</div>
-                Tu Inventario
-              </h2>
-              <div style={{ color: "#f5ac3b", fontSize: "1.2rem", fontWeight: "bold", marginTop: "5px" }}>€{totalBetValue.toFixed(2)} Seleccionado</div>
+              <h2 style={{ fontSize: '0.8rem', fontWeight: '900', margin: 0, color: '#f5ac3b', letterSpacing: '3px', textTransform: 'uppercase' }}>Tu Inventario</h2>
+              <div style={{ color: "white", fontSize: "2.5rem", fontWeight: "900", letterSpacing: '-1.5px' }}>{totalBetValue.toFixed(2)}€</div>
             </div>
-
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button
-                onClick={clearSelection} disabled={isSpinning || selectedIds.length === 0}
-                style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: "8px", padding: "8px 12px", cursor: isSpinning || selectedIds.length === 0 ? "not-allowed" : "pointer" }}
-              >Limpiar</button>
-              <button
-                onClick={selectAllSkins} disabled={isSpinning || user.inventory.length === 0}
-                style={{ background: "rgba(245, 172, 59, 0.1)", color: "#f5ac3b", border: "1px solid rgba(245,172,59, 0.3)", borderRadius: "8px", padding: "8px 12px", cursor: isSpinning || user.inventory.length === 0 ? "not-allowed" : "pointer" }}
-              >Todo</button>
-            </div>
+            <button
+              onClick={() => setSelectedIds([])}
+              disabled={isSpinning || selectedIds.length === 0}
+              style={{
+                background: "rgba(255,255,255,0.03)",
+                color: "rgba(255,255,255,0.4)",
+                border: "1px solid rgba(255,255,255,0.05)",
+                borderRadius: "14px",
+                padding: "10px 20px",
+                fontWeight: '800',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => !isSpinning && (e.target.style.background = 'rgba(255,255,255,0.08)')}
+              onMouseLeave={e => !isSpinning && (e.target.style.background = 'rgba(255,255,255,0.03)')}
+            >BORRAR TODO</button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '15px', overflowY: 'auto', flex: 1, paddingRight: '8px' }}>
-            {user.inventory.length > 0 ? (
-              user.inventory.map(skin => {
-                const isSelected = selectedIds.includes(skin.id);
-                return (
-                  <div
-                    key={skin.id}
-                    onMouseDown={() => handleMouseDown(skin.id)} onMouseEnter={() => handleMouseEnter(skin.id)}
-                    style={{
-                      background: isSelected ? `radial-gradient(circle at center, ${getRarityColor(skin.rarity)}40 0%, #16181c 80%)` : `radial-gradient(circle at center, #1a1d24 0%, #101215 100%)`,
-                      border: `2px solid ${isSelected ? getRarityColor(skin.rarity) : "#2a2e38"}`,
-                      borderRadius: '12px', padding: '15px', cursor: 'grab', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: "140px",
-                      boxShadow: isSelected ? `0 0 20px ${getRarityColor(skin.rarity)}30` : 'none',
-                      userSelect: 'none', transition: "all 0.1s"
-                    }}
-                  >
-                    <img src={skin.image} alt={skin.name} style={{ width: "80px", height: "60px", objectFit: "contain", filter: `drop-shadow(0 0 10px ${getRarityColor(skin.rarity)}50)` }} onError={(e) => e.target.style.display = "none"} />
-                    <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.65rem", marginTop: "10px", textTransform: "uppercase" }}>{skin.rarity}</div>
-                    <div style={{ color: "white", fontSize: "0.75rem", textAlign: "center", width: "100%", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", fontWeight: "bold" }}>{skin.name}</div>
-                    <div style={{ color: "#f5ac3b", fontWeight: "bold", fontSize: "0.9rem", marginTop: "5px" }}>€{parseFloat(skin.price).toFixed(2)}</div>
-                  </div>
-                )
-              })
-            ) : (
-              <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6b7280', fontSize: "1.2rem" }}>
-                Inventario vacío
-              </div>
-            )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '15px', overflowY: 'auto', flex: 1, paddingRight: '10px' }}>
+            {(user?.inventory || []).filter(s => s.image && s.name && s.price > 0).map((skin, i) => {
+              const isSelected = selectedIds.includes(skin.id);
+              const color = getRarityColor(skin.rarity);
+              return (
+                <motion.div
+                  key={skin.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  onMouseDown={() => handleSkinMouseDown(skin.id)}
+                  onMouseEnter={() => handleSkinMouseEnter(skin.id)}
+                  style={{
+                    background: isSelected ? `${color}15` : 'rgba(255,255,255,0.02)',
+                    border: isSelected ? `2px solid ${color}` : '1px solid rgba(255,255,255,0.05)',
+                    borderRadius: '24px', padding: '15px', cursor: 'grab', textAlign: 'center', transition: "all 0.2s",
+                    aspectRatio: '1/1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    userSelect: 'none'
+                  }}
+                >
+                  <img src={skin.image} alt={skin.name} style={{ width: "80%", height: "60%", objectFit: "contain", filter: `drop-shadow(0 10px 15px rgba(0,0,0,0.4))`, pointerEvents: 'none' }} />
+                  <div style={{ color: "white", fontSize: "0.7rem", fontWeight: "800", marginTop: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '90%', pointerEvents: 'none' }}>{skin.name}</div>
+                  <div style={{ color: "#f5ac3b", fontWeight: "900", fontSize: "1rem", marginTop: '2px', pointerEvents: 'none' }}>{skin.price.toFixed(2)}€</div>
+                </motion.div>
+              )
+            })}
           </div>
-        </div>
+        </motion.div>
 
-        {/* MIDDLE COLUMN - UPGRADER CORE */}
+        {/* CENTER COLUMN */}
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          background: 'linear-gradient(180deg, #111318 0%, #0a0c0f 100%)', padding: '40px', borderRadius: '20px',
-          border: '1px solid #1f232b', boxShadow: '0 30px 60px rgba(0,0,0,0.8)', gap: '30px', position: "relative"
+          gap: '50px', position: "relative"
         }}>
-
-          {/* Center Upgrader Circle */}
           <UpgradeSpinner chance={chance} isSpinning={isSpinning} resultDegree={resultDegree} onComplete={handleAnimationComplete} />
 
-          {/* Targeted Item Preview Inside Container */}
-          <div style={{ width: "100%", display: "flex", justifyContent: "space-between", gap: "20px", marginTop: "40px" }}>
-            <div style={{ flex: 1, background: "#16181c", borderRadius: "12px", border: "1px dashed #2a2e38", padding: "15px", display: "flex", flexDirection: "column", alignItems: "center", opacity: selectedIds.length ? 1 : 0.4 }}>
-              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.8rem", marginBottom: "15px", textTransform: "uppercase" }}>Input Apostado</div>
-              <div style={{ fontSize: "2.5rem" }}>📦</div>
-              <div style={{ color: "#ef4444", fontSize: "1.5rem", fontWeight: "bold", marginTop: "10px" }}>€{totalBetValue.toFixed(2)}</div>
+          <div style={{ width: "100%", display: "flex", justifyContent: "center", gap: "25px", alignItems: 'center' }}>
+            <div style={{ textAlign: 'center', flex: 1 }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: '900', color: 'rgba(255,255,255,0.25)', letterSpacing: '3px', marginBottom: '15px', textTransform: 'uppercase' }}>Seleccionado</div>
+              <div style={{
+                height: '140px',
+                background: 'rgba(255,255,255,0.02)',
+                borderRadius: '32px',
+                border: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '2.5rem',
+                fontWeight: '900',
+                color: '#fff',
+                letterSpacing: '-1px'
+              }}>
+                {totalBetValue.toFixed(2)}€
+              </div>
             </div>
 
-            <div style={{ flex: 1, background: targetSkin ? `radial-gradient(circle at center, ${getRarityColor(targetSkin.rarity)}20 0%, #16181c 80%)` : "#16181c", borderRadius: "12px", border: targetSkin ? `1px solid ${getRarityColor(targetSkin.rarity)}50` : "1px dashed #2a2e38", padding: "15px", display: "flex", flexDirection: "column", alignItems: "center", opacity: targetSkin ? 1 : 0.4 }}>
-              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.8rem", marginBottom: "10px", textTransform: "uppercase" }}>Target Output</div>
-              {targetSkin ? (
-                <>
-                  <img src={targetSkin.image} style={{ width: "80px", height: "50px", objectFit: "contain", filter: `drop-shadow(0 0 10px ${getRarityColor(targetSkin.rarity)})` }} />
-                  <div style={{ color: "#10b981", fontSize: "1.5rem", fontWeight: "bold", marginTop: "10px" }}>€{targetSkin.price.toFixed(2)}</div>
-                </>
-              ) : (
-                <div style={{ color: "rgba(255,255,255,0.3)", fontSize: "0.9rem", textAlign: "center", marginTop: "20px" }}>Selecciona un Target ➔</div>
-              )}
+            <div style={{ fontSize: '2.5rem', opacity: 0.1, color: 'white' }}>➔</div>
+
+            <div style={{ textAlign: 'center', flex: 1 }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: '900', color: '#10b981', letterSpacing: '3px', marginBottom: '15px', textTransform: 'uppercase' }}>Recompensa</div>
+              <div style={{
+                height: '140px',
+                background: targetSkins.length > 0 ? `rgba(16, 185, 129, 0.05)` : 'rgba(255,255,255,0.01)',
+                borderRadius: '32px',
+                border: targetSkins.length > 0 ? `2px solid rgba(16, 185, 129, 0.2)` : '1px dashed rgba(255,255,255,0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                overflow: 'hidden',
+                gap: '5px',
+                padding: '10px'
+              }}>
+                {targetSkins.length > 0 ? (
+                  <>
+                    <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                      {targetSkins.map(s => (
+                        <img key={s.id} src={s.image} style={{ width: targetSkins.length > 1 ? '45px' : '90px', height: 'auto', objectFit: 'contain' }} />
+                      ))}
+                    </div>
+                    <div style={{ position: 'absolute', bottom: '10px', color: '#10b981', fontWeight: '900', fontSize: '1.2rem', letterSpacing: '-0.5px', background: 'rgba(0,0,0,0.6)', padding: '2px 10px', borderRadius: '10px' }}>
+                      {totalTargetValue.toFixed(2)}€
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ color: 'rgba(255,255,255,0.05)', fontSize: '3rem', fontWeight: '900' }}>?</div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* UPGRADE BUTTON */}
-          <button
+          <motion.button
+            whileHover={(!targetSkins.length || selectedIds.length === 0 || isSpinning) ? {} : { scale: 1.02, translateY: -5 }}
+            whileTap={(!targetSkins.length || selectedIds.length === 0 || isSpinning) ? {} : { scale: 0.98 }}
             onClick={handleSpinClick}
-            disabled={!targetSkin || selectedIds.length === 0 || isSpinning}
+            disabled={!targetSkins.length || selectedIds.length === 0 || isSpinning}
             style={{
-              width: '100%', padding: '20px',
-              background: !targetSkin || selectedIds.length === 0 || isSpinning ? '#1a1d24' : 'linear-gradient(90deg, rgb(245, 172, 59), rgb(224, 153, 42))',
-              color: !targetSkin || selectedIds.length === 0 || isSpinning ? 'rgba(255,255,255,0.3)' : 'black',
-              border: 'none', borderRadius: '16px', fontWeight: 'bold', fontSize: '1.5rem', cursor: !targetSkin || selectedIds.length === 0 || isSpinning ? 'not-allowed' : 'pointer',
-              boxShadow: targetSkin && selectedIds.length && !isSpinning ? '0 10px 40px rgba(245, 172, 59, 0.4)' : 'none',
-              textTransform: 'uppercase', letterSpacing: '2px', transition: "all 0.2s"
+              width: '100%', padding: '28px',
+              background: !targetSkins.length || selectedIds.length === 0 || isSpinning ? 'rgba(255,255,255,0.03)' : 'linear-gradient(90deg, #f5ac3b, #ffba52)',
+              color: !targetSkins.length || selectedIds.length === 0 || isSpinning ? 'rgba(255,255,255,0.2)' : 'black',
+              border: 'none', borderRadius: '24px', fontWeight: '900', fontSize: '1.5rem',
+              cursor: 'pointer', transition: "all 0.3s",
+              boxShadow: targetSkins.length && selectedIds.length && !isSpinning ? '0 20px 50px rgba(245, 172, 59, 0.3)' : 'none',
+              letterSpacing: '2px'
             }}
           >
-            {isSpinning ? 'UPGRADING...' : selectedIds.length === 0 ? 'ELIGE SKINS' : !targetSkin ? 'ELIGE TARGET' : 'UPGRADE'}
-          </button>
+            {isSpinning ? 'MEJORANDO...' : 'INTENTAR UPGRADE 🚀'}
+          </motion.button>
 
-          {/* Result Toast Overlay */}
-          {lastResult && !isSpinning && (
-            <div style={{
-              position: "absolute", bottom: "30%", left: "50%", transform: "translate(-50%, 50%)", width: "90%",
-              background: lastResult.success ? 'rgba(16, 185, 129, 0.9)' : 'rgba(239, 68, 68, 0.9)', backdropFilter: "blur(10px)", border: `2px solid ${lastResult.success ? '#10b981' : '#ef4444'}`,
-              padding: "20px", borderRadius: "16px", textAlign: "center", animation: "slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)", zIndex: 50, boxShadow: "0 20px 50px rgba(0,0,0,0.5)"
-            }}>
-              <h3 style={{ color: "white", fontSize: "2rem", margin: "0 0 10px 0" }}>
-                {lastResult.success ? '🎉 UPGRADE EXITOSO 🎉' : '💀 UPGRADE FALLIDO 💀'}
-              </h3>
-              {lastResult.success ? (
-                <>
-                  <div style={{ color: "rgba(255,255,255,0.8)", fontSize: "1.1rem" }}>Has obtenido:</div>
-                  <img src={lastResult.skin.image} style={{ width: "120px", display: "block", margin: "10px auto", filter: `drop-shadow(0 0 15px white)` }} />
-                  <div style={{ color: "white", fontWeight: "bold", fontSize: "1.2rem" }}>{lastResult.skin.name}</div>
-                </>
-              ) : (
-                <div style={{ color: "rgba(255,255,255,0.8)", fontSize: "1.1rem", marginTop: "10px" }}>Tus skins han sido perdidas.</div>
-              )}
-            </div>
-          )}
-
-        </div>
-
-        {/* RIGHT COLUMN - TARGET STORE */}
-        <div style={{
-          display: 'flex', flexDirection: 'column',
-          background: '#111318', padding: '24px', borderRadius: '20px', border: '1px solid #1f232b',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.4)', overflow: 'hidden'
-        }}>
-          <div style={{ marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: "0 0 15px 0", display: "flex", alignItems: "center", gap: "10px" }}>
-              <div style={{ width: "30px", height: "30px", background: "rgba(16, 185, 129, 0.2)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>🎯</div>
-              Elige Target
-            </h2>
-            <input
-              type="text" placeholder="Buscar skin..." value={searchRight} onChange={e => setSearchRight(e.target.value)}
-              style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #2a2e38", background: "#0a0c0f", color: "white", boxSizing: "border-box" }}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '15px', overflowY: 'auto', flex: 1, paddingRight: '8px' }}>
-            {skinsLoading ? (
-              <div style={{ color: "white", gridColumn: "1/-1", textAlign: "center", padding: "20px" }}>Cargando skins...</div>
-            ) : validTargets.length > 0 ? (
-              validTargets.map(skin => {
-                const isTargeted = targetSkin?.id === skin.id;
-                return (
-                  <div
-                    key={skin.id}
-                    onClick={() => { if (!isSpinning) setTargetSkin(skin); }}
-                    style={{
-                      background: isTargeted ? `radial-gradient(circle at center, ${getRarityColor(skin.rarity)}40 0%, #16181c 80%)` : `radial-gradient(circle at center, #1a1d24 0%, #101215 100%)`,
-                      border: `2px solid ${isTargeted ? getRarityColor(skin.rarity) : "#2a2e38"}`,
-                      borderRadius: '12px', padding: '15px', cursor: isSpinning ? 'not-allowed' : 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: "140px",
-                      boxShadow: isTargeted ? `0 0 20px ${getRarityColor(skin.rarity)}30` : 'none',
-                      transition: "all 0.1s"
-                    }}
-                  >
-                    <img src={skin.image} alt={skin.name} style={{ width: "80px", height: "60px", objectFit: "contain", filter: `drop-shadow(0 0 10px ${getRarityColor(skin.rarity)}50)` }} onError={(e) => e.target.style.display = "none"} />
-                    <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.65rem", marginTop: "10px", textTransform: "uppercase" }}>{skin.rarity}</div>
-                    <div style={{ color: "white", fontSize: "0.75rem", textAlign: "center", width: "100%", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", fontWeight: "bold" }}>{skin.name}</div>
-                    <div style={{ color: "#10b981", fontWeight: "bold", fontSize: "0.9rem", marginTop: "5px" }}>€{parseFloat(skin.price).toFixed(2)}</div>
+          <AnimatePresence>
+            {lastResult && !isSpinning && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                style={{
+                  position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, -50%)", width: "100%", zIndex: 100,
+                  background: lastResult.success ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+                  padding: "60px 40px", borderRadius: "40px", textAlign: "center",
+                  boxShadow: "0 50px 150px rgba(0,0,0,0.9)",
+                }}
+              >
+                <div style={{ fontSize: "5rem", marginBottom: "20px" }}>{lastResult.success ? '🔥' : '💀'}</div>
+                <h3 style={{ color: "white", fontSize: "3rem", margin: "0 0 15px 0", fontWeight: '900', letterSpacing: '-1.5px' }}>
+                  {lastResult.success ? '¡UPGRADE ÉPICO!' : 'HAS FALLADO'}
+                </h3>
+                <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', fontWeight: '600', marginBottom: '30px' }}>
+                  {lastResult.success ? `¡Felicidades! Has conseguido esta skin épica.` : 'No te rindas, la suerte es para los valientes.'}
+                </p>
+                {lastResult.success && (
+                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '30px', borderRadius: '30px', marginBottom: '30px', display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center' }}>
+                    {lastResult.skins.map(skin => (
+                      <div key={skin.id} style={{ textAlign: 'center' }}>
+                        <img src={skin.image} style={{ width: "100px", margin: "0 auto", filter: 'drop-shadow(0 0 30px white)' }} />
+                        <div style={{ color: "white", fontWeight: "900", fontSize: "0.9rem", marginTop: '10px' }}>{skin.name}</div>
+                        <div style={{ color: "#fff", fontWeight: "900", fontSize: "1.2rem", opacity: 0.8 }}>{skin.price.toFixed(2)}€</div>
+                      </div>
+                    ))}
+                    <div style={{ width: '100%', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '15px', color: '#10b981', fontWeight: '900', fontSize: '1.8rem' }}>
+                      TOTAL: {lastResult.skins.reduce((a, b) => a + b.price, 0).toFixed(2)}€
+                    </div>
                   </div>
-                )
-              })
-            ) : (
-              <div style={{ color: "white", gridColumn: "1/-1", textAlign: "center", padding: "20px" }}>Skins no encontradas.</div>
+                )}
+                <button
+                  onClick={() => setLastResult(null)}
+                  style={{ padding: '15px 40px', borderRadius: '18px', border: 'none', background: 'rgba(255,255,255,0.15)', color: 'white', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer', backdropFilter: 'blur(10px)' }}
+                >CONTINUAR</button>
+              </motion.div>
             )}
-          </div>
+          </AnimatePresence>
         </div>
 
-      </div>
+        {/* TARGET STORE COLUMN */}
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          style={{
+            display: 'flex', flexDirection: 'column',
+            background: 'rgba(255,255,255,0.02)', padding: '30px', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.05)',
+            maxHeight: 'calc(100vh - 80px)', backdropFilter: 'blur(20px)'
+          }}
+        >
+          <div style={{ marginBottom: '30px' }}>
+            <h2 style={{ fontSize: '0.8rem', fontWeight: '900', margin: "0 0 20px 0", color: '#10b981', letterSpacing: '3px', textTransform: 'uppercase' }}>Target Store</h2>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text" placeholder="Buscar skin de destino..." value={searchRight} onChange={e => setSearchRight(e.target.value)}
+                style={{
+                  width: "100%", padding: "20px 25px", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(0,0,0,0.2)", color: "white", fontSize: "1rem", fontWeight: '600', outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+          </div>
 
-      <style>{`
-        @keyframes slideUp {
-          from { opacity: 0; transform: translate(-50%, 70%); }
-          to { opacity: 1; transform: translate(-50%, 50%); }
-        }
-      `}</style>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '15px', overflowY: 'auto', flex: 1, paddingRight: '10px' }}>
+            {paginatedTargets.map((skin, i) => {
+              const isTargeted = targetSkins.find(s => s.id === skin.id);
+              const color = getRarityColor(skin.rarity);
+              return (
+                <motion.div
+                  key={skin.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  onMouseDown={() => handleTargetMouseDown(skin)}
+                  onMouseEnter={() => handleTargetMouseEnter(skin)}
+                  style={{
+                    background: isTargeted ? `${color}15` : 'rgba(255,255,255,0.02)',
+                    border: isTargeted ? `2px solid ${color}` : '1px solid rgba(255,255,255,0.05)',
+                    borderRadius: '24px', padding: '15px', cursor: 'grab', textAlign: 'center', transition: "all 0.2s",
+                    aspectRatio: '1/1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    userSelect: 'none'
+                  }}
+                >
+                  <img src={skin.image} alt={skin.name} style={{ width: "80%", height: "60%", objectFit: "contain", filter: `drop-shadow(0 10px 15px rgba(0,0,0,0.4))`, pointerEvents: 'none' }} />
+                  <div style={{ color: "white", fontSize: "0.7rem", fontWeight: "800", marginTop: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '90%', pointerEvents: 'none' }}>{skin.name}</div>
+                  <div style={{ color: "#10b981", fontWeight: "900", fontSize: "1rem", marginTop: '2px', pointerEvents: 'none' }}>{skin.price.toFixed(2)}€</div>
+                </motion.div>
+              )
+            })}
+          </div>
+
+          {/* Pagination */}
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '20px', padding: '10px' }}>
+            <button
+              disabled={page === 0}
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              style={{
+                background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', padding: '10px 15px',
+                borderRadius: '12px', cursor: page === 0 ? 'default' : 'pointer', opacity: page === 0 ? 0.3 : 1
+              }}
+            >◀</button>
+            <span style={{ color: 'rgba(255,255,255,0.5)', fontWeight: 'bold', fontSize: '0.9rem' }}>
+              PÁGINA {page + 1} DE {maxPages}
+            </span>
+            <button
+              disabled={page >= maxPages - 1}
+              onClick={() => setPage(p => Math.min(maxPages - 1, p + 1))}
+              style={{
+                background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', padding: '10px 15px',
+                borderRadius: '12px', cursor: page >= maxPages - 1 ? 'default' : 'pointer', opacity: page >= maxPages - 1 ? 0.3 : 1
+              }}
+            >▶</button>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }

@@ -10,76 +10,117 @@ const rarityColors = {
 
 export default function SkinCard({ skin }) {
   const rarity = skin.rarity || "Mil-Spec Grade";
-  const borderColor = rarityColors[rarity] || "#f5ac3b";
+  const color = rarityColors[rarity] || "#f5ac3b";
 
   return (
     <motion.div
-      className="card"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{
-        scale: 1.05,
-        boxShadow: `0 0 25px ${borderColor}`
-      }}
-      transition={{ duration: 0.3 }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ y: -8 }}
+      transition={{ duration: 0.4, cubicBezier: [0.175, 0.885, 0.32, 1.275] }}
       style={{
-        background: "#0f172a",
-        borderRadius: "16px",
-        padding: "20px",
+        background: "rgba(255,255,255,0.02)",
+        borderRadius: "24px",
+        padding: "24px",
         color: "white",
-        textAlign: "center",
-        border: `2px solid ${borderColor}`,
-        cursor: "pointer"
+        textAlign: "left",
+        border: `1px solid rgba(255,255,255,0.05)`,
+        borderBottom: `4px solid ${color}`,
+        cursor: "pointer",
+        position: 'relative',
+        overflow: 'hidden',
+        backdropFilter: 'blur(10px)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between'
       }}
     >
-      {/* Imagen */}
-      {skin.image && (
-        <img
-          src={skin.image}
-          alt={skin.name}
-          style={{
-            width: "100%",
-            height: "140px",
-            objectFit: "contain",
-            marginBottom: "15px"
-          }}
-        />
-      )}
+      {/* Background Glow */}
+      <div style={{
+        position: 'absolute',
+        top: '-50%',
+        left: '-50%',
+        width: '200%',
+        height: '200%',
+        background: `radial-gradient(circle at center, ${color}11 0%, transparent 50%)`,
+        zIndex: 0,
+        pointerEvents: 'none'
+      }} />
 
-      {/* Nombre */}
-      <h2 style={{ fontSize: "1rem", marginBottom: "10px" }}>
-        {skin.name}
-      </h2>
+      <div>
+        {/* Rarity Tag */}
+        <div style={{
+          display: 'inline-block',
+          fontSize: '0.65rem',
+          fontWeight: '900',
+          padding: '4px 10px',
+          borderRadius: '8px',
+          background: `${color}15`,
+          color: color,
+          textTransform: 'uppercase',
+          letterSpacing: '1px',
+          marginBottom: '20px',
+          border: `1px solid ${color}33`,
+          position: 'relative',
+          zIndex: 1
+        }}>
+          {rarity}
+        </div>
 
-      {/* Precio */}
-      <p style={{ fontWeight: "bold", fontSize: "1.1rem" }}>
-        {skin.price} €
-      </p>
+        {/* Image Container */}
+        {skin.image && (
+          <div style={{ position: 'relative', height: '160px', marginBottom: '20px', zIndex: 1 }}>
+            <img
+              src={skin.image}
+              alt={skin.name}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                filter: "drop-shadow(0 15px 25px rgba(0,0,0,0.5))"
+              }}
+            />
+          </div>
+        )}
 
-      {/* Rareza */}
-      <p>
-        Rareza:{" "}
-        <strong style={{ color: borderColor }}>
-          {rarity.toUpperCase()}
-        </strong>
-      </p>
+        {/* Name and Series */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <h3 style={{
+            fontSize: "1.1rem",
+            marginBottom: "6px",
+            fontWeight: '700',
+            lineHeight: '1.2',
+            height: '2.6rem',
+            overflow: 'hidden'
+          }}>
+            {skin.name}
+          </h3>
+          <p style={{
+            color: 'rgba(255,255,255,0.4)',
+            fontSize: '0.8rem',
+            margin: 0,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
+            COLECCIÓN ESTÁNDAR
+          </p>
+        </div>
+      </div>
 
-      {/* Botón */}
-      <motion.button
-        whileTap={{ scale: 0.9 }}
-        style={{
-          marginTop: "12px",
-          padding: "8px 16px",
-          borderRadius: "8px",
-          border: "none",
-          background: borderColor,
-          color: "#000",
-          fontWeight: "bold",
-          cursor: "pointer"
-        }}
-      >
-        Comprar
-      </motion.button>
+      {/* Footer Info */}
+      <div style={{
+        marginTop: '25px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        <div style={{ fontWeight: "900", fontSize: "1.4rem", color: '#fff' }}>
+          {skin.price} <span style={{ fontSize: '0.9rem', color: '#f5ac3b' }}>€</span>
+        </div>
+
+      </div>
     </motion.div>
   );
 }

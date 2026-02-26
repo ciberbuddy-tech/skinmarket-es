@@ -1,117 +1,203 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { FaUpload } from "react-icons/fa";
+import { useAuth } from "../context/useAuth";
+import { useState } from "react";
+import RechargeModal from "./RechargeModal";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [rechargeOpen, setRechargeOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate("/");
   };
 
-  const commonButtonStyle = {
-    padding: "8px 15px",
+  const linkStyle = {
+    color: "rgba(255,255,255,0.7)",
+    textDecoration: "none",
+    fontSize: "0.95rem",
+    fontWeight: "600",
+    transition: "color 0.2s ease",
+    padding: "8px 12px",
     borderRadius: "8px",
-    border: "none",
-    cursor: "pointer",
-    fontWeight: "bold"
-  };
-
-  const uploadButtonStyle = {
-    ...commonButtonStyle,
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    background: "#f5ac3b",
-    color: "#000"
-  };
-
-  const logoutButtonStyle = {
-    ...commonButtonStyle,
-    background: "linear-gradient(90deg, #ff5555, #ff0000)",
-    color: "#fff"
-  };
-
-  const loginButtonStyle = {
-    ...commonButtonStyle,
-    background: "#1a1d24",
-    color: "#fff"
   };
 
   return (
-    <nav
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        flexWrap: "wrap",
-        padding: "12px 20px",
-        background: "#111318",
-        color: "white"
-      }}
-    >
-      <Link
-        to="/"
+    <>
+      <nav
         style={{
-          display: "inline-flex",
+          display: "flex",
+          justifyContent: "space-between",
           alignItems: "center",
-          gap: "8px",          // separa logo y texto
-          fontSize: "1.6rem",  // texto más grande
-          fontWeight: "bold",
-          color: "white",
-          textDecoration: "none"
+          padding: "0 40px",
+          height: "80px",
+          background: "#0c0d10",
+          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          backdropFilter: 'blur(20px)'
         }}
       >
-        <img
-          src="/logo.png"
-          alt="Logo"
-          style={{
-            height: "1em",   // iguala la altura del texto
-            width: "auto"
-          }}
-        />
-        SkinMarket ES
-      </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
+          <Link
+            to="/"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "12px",
+              fontSize: "1.4rem",
+              fontWeight: "900",
+              color: "white",
+              textDecoration: "none",
+              letterSpacing: '-0.5px'
+            }}
+          >
+            <div style={{
+              width: '32px',
+              height: '32px',
+              background: '#f5ac3b',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: '900',
+              color: 'black',
+              fontSize: '1rem'
+            }}>S</div>
+            <span>SKINMART<span style={{ color: '#f5ac3b' }}>ES</span></span>
+          </Link>
 
-      <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-        {user ? (
-          <>
-            <Link to="/dashboard" style={{ color: "white" }}>Panel</Link>
-            <Link to="/cases" style={{ color: "white" }}>Cajas</Link>
-            <Link to="/upgrade" style={{ color: "white" }}>Upgrade</Link>
-            <Link to="/battles" style={{ color: "white" }}>Batallas</Link>
-            <Link to="/inventory" style={{ color: "white" }}>Inventario</Link>
+          {user && (
+            <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
+              <Link to="/cases" style={linkStyle} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}>Cajas</Link>
+              <Link to="/upgrade" style={linkStyle} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}>Upgrade</Link>
+              <Link to="/battles" style={linkStyle} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}>Batallas</Link>
+              <Link to="/ranking" style={linkStyle} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}>Ranking</Link>
+            </div>
+          )}
+        </div>
 
-            <Link to="/upload">
-              <button style={uploadButtonStyle}>
-                <FaUpload /> Depositar
+        <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+          {user ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '6px 16px',
+                  background: 'rgba(245, 172, 59, 0.1)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(245, 172, 59, 0.2)'
+                }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.5)' }}>SALDO</span>
+                  <span style={{ fontWeight: '900', color: '#f5ac3b' }}>{(user.balance || 0).toLocaleString()} €</span>
+                </div>
+                <button
+                  onClick={() => setRechargeOpen(true)}
+                  style={{
+                    width: '32px', height: '32px', borderRadius: '8px', background: '#f5ac3b',
+                    border: 'none', color: 'black', fontWeight: '900', cursor: 'pointer',
+                    fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}
+                >
+                  +
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <Link to="/ranking" style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: 'rgba(255,255,255,0.05)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  textDecoration: 'none',
+                  transition: 'all 0.2s ease',
+                  fontSize: '1.2rem'
+                }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
+                  🏆
+                </Link>
+                <Link to="/inventory" style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: 'rgba(255,255,255,0.05)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  textDecoration: 'none',
+                  transition: 'all 0.2s ease',
+                  fontSize: '1.2rem'
+                }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
+                  🎒
+                </Link>
+                <Link to="/dashboard" style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: 'rgba(255,255,255,0.05)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  textDecoration: 'none',
+                  transition: 'all 0.2s ease',
+                  fontSize: '1.2rem'
+                }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}>
+                  👤
+                </Link>
+              </div>
+
+              <button
+                onClick={handleLogout}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "12px",
+                  border: "none",
+                  background: "rgba(255,85,85,0.1)",
+                  color: "#ff5555",
+                  fontWeight: "900",
+                  cursor: "pointer",
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.background = 'rgba(255,85,85,0.2)'}
+                onMouseLeave={(e) => e.target.style.background = 'rgba(255,85,85,0.1)'}
+              >
+                SALIR
+              </button>
+            </>
+          ) : (
+            <Link to="/login" style={{ textDecoration: 'none' }}>
+              <button style={{
+                padding: "12px 32px",
+                borderRadius: "12px",
+                border: "none",
+                background: "#f5ac3b",
+                color: "black",
+                fontWeight: "900",
+                cursor: "pointer",
+                boxShadow: '0 4px 15px rgba(245, 172, 59, 0.3)'
+              }}>
+                LOGIN
               </button>
             </Link>
-
-            <span
-              style={{
-                background: "rgba(245, 172, 59, 0.1)",
-                padding: "8px 15px",
-                borderRadius: "8px",
-                border: "1px solid #f5ac3b",
-                fontSize: "0.9rem"
-              }}
-            >
-              💰 Saldo: {user.balance.toLocaleString()} €
-            </span>
-
-            <button onClick={handleLogout} style={logoutButtonStyle}>
-              Logout
-            </button>
-          </>
-        ) : (
-          <Link to="/login">
-            <button style={loginButtonStyle}>Login</button>
-          </Link>
-        )}
-      </div>
-    </nav>
+          )}
+        </div>
+      </nav>
+      <RechargeModal open={rechargeOpen} onClose={() => setRechargeOpen(false)} />
+    </>
   );
 }

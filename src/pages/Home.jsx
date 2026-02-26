@@ -1,11 +1,11 @@
 import SkinCard from "../components/SkinCard";
 import { useFetchSkins } from "../hooks/useFetchSkins";
 import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import Carrusel from "../components/Carrusel";
+import { useAuth } from "../context/useAuth";
+import { motion } from "framer-motion";
 
 export default function Home() {
-  const { skins, loading, error } = useFetchSkins(6, true);
+  const { skins, loading } = useFetchSkins(8, true);
   const { user } = useAuth();
 
   if (loading) {
@@ -15,31 +15,18 @@ export default function Home() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(135deg, #111318 0%, #0f1115 100%)"
+        background: "#0f1115"
       }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "20px" }}>🎮</div>
-          <div style={{ color: "#f5ac3b", fontSize: "1.2rem", fontWeight: "bold", animation: "pulse 1.5s infinite" }}>
-            Cargando skins increíbles...
+          <div style={{ fontSize: "4rem", marginBottom: "20px", animation: "bounce 2s infinite" }}>💎</div>
+          <div style={{
+            color: "#f5ac3b",
+            fontSize: "1.5rem",
+            fontWeight: "900",
+            letterSpacing: '2px'
+          }}>
+            PREPARANDO EL MERCADO...
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(135deg, #111318 0%, #0f1115 100%)",
-        color: "#ff5555"
-      }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "20px" }}>⚠️</div>
-          <p>Error cargando skins. Intenta más tarde.</p>
         </div>
       </div>
     );
@@ -48,230 +35,268 @@ export default function Home() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "linear-gradient(135deg, #111318 0%, #0f1115 50%, #111318 100%)",
-      padding: 0
+      background: "#0f1115",
+      color: 'white',
+      overflow: 'hidden'
     }}>
-      <Carrusel />
       {/* Hero Section */}
-      <div style={{
-        padding: "80px 40px",
-        textAlign: "center",
-        background: "linear-gradient(180deg, rgba(245, 172, 59,0.1) 0%, transparent 100%)",
-        borderBottom: "2px solid rgba(245, 172, 59,0.2)"
+      <section style={{
+        position: 'relative',
+        padding: '160px 40px',
+        textAlign: 'center',
+        background: 'radial-gradient(circle at 50% 50%, rgba(245, 172, 59, 0.05) 0%, transparent 70%)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center'
       }}>
-        <h1 style={{
-          fontSize: "3.5rem",
-          margin: "0 0 20px 0",
-          color: "white",
-          textShadow: "0 4px 20px rgba(245, 172, 59,0.3)",
-          fontWeight: "900",
-          letterSpacing: "-1px"
-        }}>
-          🎁 SkinMarket ES
-        </h1>
-        <p style={{
-          fontSize: "1.3rem",
-          color: "rgba(255,255,255,0.8)",
-          margin: "0 0 40px 0",
-          maxWidth: "600px",
-          marginLeft: "auto",
-          marginRight: "auto"
-        }}>
-          La mejor plataforma para comprar, vender y abrir cajas de skins de CS:GO
-        </p>
+        {/* Decorative elements */}
+        <div style={{
+          position: 'absolute',
+          top: '20%',
+          left: '15%',
+          width: '500px',
+          height: '500px',
+          background: 'radial-gradient(circle, #f5ac3b11 0%, transparent 70%)',
+          filter: 'blur(100px)',
+          zIndex: 0
+        }} />
+        <div style={{
+          position: 'absolute',
+          bottom: '20%',
+          right: '15%',
+          width: '600px',
+          height: '600px',
+          background: 'radial-gradient(circle, #3b82f611 0%, transparent 70%)',
+          filter: 'blur(100px)',
+          zIndex: 0
+        }} />
 
-        {!user && (
-          <Link to="/login" style={{ textDecoration: "none" }}>
-            <button style={{
-              padding: "14px 40px",
-              fontSize: "1rem",
-              fontWeight: "bold",
-              color: "black",
-              background: "linear-gradient(90deg, #f5ac3b 0%, #e0992a 100%)",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              boxShadow: "0 4px 15px rgba(245, 172, 59,0.3)"
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          style={{ position: 'relative', zIndex: 1, maxWidth: '1000px' }}
+        >
+          <motion.span
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            style={{
+              display: 'inline-block',
+              padding: '10px 24px',
+              background: 'rgba(245, 172, 59, 0.1)',
+              border: '1px solid rgba(245, 172, 59, 0.2)',
+              borderRadius: '30px',
+              color: '#f5ac3b',
+              fontSize: '0.9rem',
+              fontWeight: '900',
+              textTransform: 'uppercase',
+              letterSpacing: '3px',
+              marginBottom: '40px'
             }}
-              onMouseOver={(e) => {
-                e.target.style.transform = "translateY(-2px)";
-                e.target.style.boxShadow = "0 6px 20px rgba(245, 172, 59,0.5)";
+          >
+            LA PLATAFORMA #1 DE CS:GO EN ESPAÑA
+          </motion.span>
+
+          <h1 style={{
+            fontSize: "clamp(3.5rem, 10vw, 7rem)",
+            margin: "0 0 30px 0",
+            fontWeight: "900",
+            lineHeight: "0.9",
+            letterSpacing: "-4px",
+            background: 'linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.4) 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.5))'
+          }}>
+            EL MERCADO <br />
+            <span style={{
+              background: 'linear-gradient(90deg, #f5ac3b, #fbbf24)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>MAS EXCLUSIVO</span>
+          </h1>
+
+          <p style={{
+            fontSize: "1.4rem",
+            color: "rgba(255,255,255,0.4)",
+            margin: "0 0 60px 0",
+            maxWidth: "700px",
+            lineHeight: '1.6',
+            marginInline: 'auto',
+            fontWeight: '500'
+          }}>
+            Vive la experiencia definitiva abriendo cajas premium, realizando upgrades
+            de alto riesgo y compitiendo en batallas contra otros jugadores.
+          </p>
+
+          <div style={{ display: 'flex', gap: '25px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to="/cases" style={{ textDecoration: "none" }}>
+              <motion.button
+                whileHover={{ scale: 1.05, translateY: -5 }}
+                whileTap={{ scale: 0.95 }}
+                style={{
+                  padding: "22px 60px",
+                  fontSize: "1.2rem",
+                  fontWeight: "900",
+                  color: "black",
+                  background: "#f5ac3b",
+                  border: "none",
+                  borderRadius: "20px",
+                  cursor: "pointer",
+                  boxShadow: "0 20px 40px rgba(245, 172, 59, 0.3)",
+                  letterSpacing: '1px'
+                }}
+              >
+                EMPEZAR AHORA 🎁
+              </motion.button>
+            </Link>
+
+            {!user && (
+              <Link to="/login" style={{ textDecoration: "none" }}>
+                <motion.button
+                  whileHover={{ scale: 1.05, background: 'rgba(255,255,255,0.1)' }}
+                  whileTap={{ scale: 0.95 }}
+                  style={{
+                    padding: "22px 60px",
+                    fontSize: "1.2rem",
+                    fontWeight: "900",
+                    color: "white",
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "20px",
+                    cursor: "pointer",
+                    backdropFilter: 'blur(10px)',
+                    transition: 'border 0.3s ease'
+                  }}
+                >
+                  INGRESAR
+                </motion.button>
+              </Link>
+            )}
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Stats Section */}
+      <section style={{ padding: '0 40px 140px' }}>
+        <div style={{
+          maxWidth: '1400px',
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '30px'
+        }}>
+          {[
+            { label: 'Skins Activas', value: '18,500+', color: '#f5ac3b', icon: '🔥' },
+            { label: 'Cajas Únicas', value: '250+', color: '#3b82f6', icon: '📦' },
+            { label: 'Usuarios VIP', value: '125k+', color: '#a855f7', icon: '💎' }
+          ].map((stat, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              style={{
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                padding: '50px 40px',
+                borderRadius: '40px',
+                textAlign: 'center',
+                position: 'relative',
+                overflow: 'hidden'
               }}
-              onMouseOut={(e) => {
-                e.target.style.transform = "translateY(0)";
-                e.target.style.boxShadow = "0 4px 15px rgba(245, 172, 59,0.3)";
-              }}>
-              🚀 Comenzar Ahora
-            </button>
-          </Link>
-        )}
-      </div>
-
-      {/* Stats */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-        gap: "20px",
-        padding: "40px",
-        maxWidth: "1200px",
-        margin: "0 auto",
-        marginBottom: "60px"
-      }}>
-        <div style={{
-          background: "rgba(245, 172, 59,0.1)",
-          padding: "20px",
-          borderRadius: "12px",
-          border: "2px solid rgba(245, 172, 59,0.3)",
-          textAlign: "center"
-        }}>
-          <div style={{ fontSize: "2rem", color: "#f5ac3b", fontWeight: "bold", marginBottom: "8px" }}>
-            1000+
-          </div>
-          <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.9rem" }}>
-            Skins Disponibles
-          </div>
-        </div>
-
-        <div style={{
-          background: "rgba(59,130,246,0.1)",
-          padding: "20px",
-          borderRadius: "12px",
-          border: "2px solid rgba(59,130,246,0.3)",
-          textAlign: "center"
-        }}>
-          <div style={{ fontSize: "2rem", color: "#3b82f6", fontWeight: "bold", marginBottom: "8px" }}>
-            80+
-          </div>
-          <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.9rem" }}>
-            Cajas Temáticas
-          </div>
-        </div>
-
-        <div style={{
-          background: "rgba(168,85,247,0.1)",
-          padding: "20px",
-          borderRadius: "12px",
-          border: "2px solid rgba(168,85,247,0.3)",
-          textAlign: "center"
-        }}>
-          <div style={{ fontSize: "2rem", color: "#a855f7", fontWeight: "bold", marginBottom: "8px" }}>
-            100%
-          </div>
-          <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.9rem" }}>
-            Seguro y Confiable
-          </div>
-        </div>
-      </div>
-
-      {/* Skins Destacadas */}
-      <div style={{
-        maxWidth: "1200px",
-        margin: "0 auto",
-        padding: "0 40px 80px"
-      }}>
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "40px"
-        }}>
-          <div>
-            <h2 style={{
-              fontSize: "2rem",
-              margin: 0,
-              color: "white",
-              marginBottom: "8px"
-            }}>
-              ✨ Skins Destacadas
-            </h2>
-            <p style={{
-              margin: 0,
-              color: "rgba(255,255,255,0.6)",
-              fontSize: "0.9rem"
-            }}>
-              Descubre las mejores skins disponibles hoy
-            </p>
-          </div>
-          <Link to="/cases" style={{ textDecoration: "none" }}>
-            <button style={{
-              padding: "10px 20px",
-              background: "rgba(245, 172, 59,0.2)",
-              border: "2px solid #f5ac3b",
-              color: "#f5ac3b",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontWeight: "bold",
-              transition: "all 0.3s ease"
-            }}
-              onMouseOver={(e) => {
-                e.target.style.background = "rgba(245, 172, 59,0.3)";
-              }}
-              onMouseOut={(e) => {
-                e.target.style.background = "rgba(245, 172, 59,0.2)";
-              }}>
-              Ver Todas →
-            </button>
-          </Link>
-        </div>
-
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-          gap: "20px"
-        }}>
-          {skins.map((skin) => (
-            <SkinCard key={skin.id} skin={skin} />
+            >
+              <div style={{ fontSize: '3rem', marginBottom: '20px' }}>{stat.icon}</div>
+              <div style={{ fontSize: '3rem', fontWeight: '900', color: 'white', marginBottom: '8px', letterSpacing: '-1px' }}>{stat.value}</div>
+              <div style={{ color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '2px', fontSize: '0.85rem', fontWeight: '900' }}>{stat.label}</div>
+            </motion.div>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Call to Action */}
-      {user && (
-        <div style={{
-          background: "#16181c",
-          borderTop: "2px solid #f5ac3b",
-          padding: "60px 40px",
-          textAlign: "center",
-          marginTop: "80px"
-        }}>
-          <h2 style={{ color: "white", margin: "0 0 20px 0", fontSize: "2rem" }}>
-            🎮 ¿Listo para comenzar?
-          </h2>
-          <p style={{ color: "rgba(255,255,255,0.7)", marginBottom: "30px", fontSize: "1rem" }}>
-            Elige entre nuestras cajas temáticas y obtén increíbles skins
-          </p>
-          <Link to="/cases" style={{ textDecoration: "none" }}>
-            <button style={{
-              padding: "14px 40px",
-              fontSize: "1rem",
-              fontWeight: "bold",
-              color: "black",
-              background: "linear-gradient(90deg, #f5ac3b 0%, #e0992a 100%)",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              boxShadow: "0 4px 15px rgba(245, 172, 59,0.3)"
-            }}
-              onMouseOver={(e) => {
-                e.target.style.transform = "translateY(-2px)";
-                e.target.style.boxShadow = "0 6px 20px rgba(245, 172, 59,0.5)";
-              }}
-              onMouseOut={(e) => {
-                e.target.style.transform = "translateY(0)";
-                e.target.style.boxShadow = "0 4px 15px rgba(245, 172, 59,0.3)";
-              }}>
-              Ir a Cajas 🎁
-            </button>
-          </Link>
+      {/* Featured Skins Section */}
+      <section style={{ padding: '0 40px 160px' }}>
+        <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-end',
+            marginBottom: '80px'
+          }}>
+            <div>
+              <h2 style={{ fontSize: '4rem', fontWeight: '900', margin: 0, letterSpacing: '-2px' }}>
+                ÚLTIMOS <span style={{ color: '#f5ac3b' }}>DROPS</span>
+              </h2>
+              <p style={{ color: 'rgba(255,255,255,0.3)', margin: '15px 0 0 0', fontSize: '1.2rem', fontWeight: '500' }}>
+                Las skins más exclusivas obtenidas por nuestra comunidad en tiempo real.
+              </p>
+            </div>
+            <Link to="/cases" style={{ textDecoration: 'none', color: '#f5ac3b', fontWeight: '900', fontSize: '1.1rem', letterSpacing: '1px' }}>
+              EXPLORAR TODO →
+            </Link>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            gap: '40px'
+          }}>
+            {skins.map((skin, i) => (
+              <motion.div
+                key={skin.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <SkinCard skin={skin} />
+              </motion.div>
+            ))}
+          </div>
         </div>
-      )}
+      </section>
+
+      {/* Footer Branding */}
+      <footer style={{
+        padding: '120px 40px',
+        background: '#0a0c10',
+        borderTop: '1px solid rgba(255,255,255,0.03)',
+        textAlign: 'center'
+      }}>
+        <div style={{
+          fontSize: '2.5rem',
+          fontWeight: '900',
+          marginBottom: '30px',
+          letterSpacing: '-1.5px',
+          background: 'linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.4) 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent'
+        }}>
+          SKINMART<span style={{ color: '#f5ac3b' }}>ES</span>
+        </div>
+        <p style={{ color: 'rgba(255,255,255,0.2)', maxWidth: '700px', margin: '0 auto', fontSize: '1rem', lineHeight: '1.8' }}>
+          © 2026 SkinMarket ES. Todos los derechos reservados. No estamos afiliados con Valve Corp.
+          CS:GO es una marca registrada de Valve Corporation. Juega de forma responsable y solo si eres mayor de edad.
+        </p>
+      </footer>
 
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
+        body {
+          scrollbar-width: thin;
+          scrollbar-color: #f5ac3b #0f1115;
+        }
+        ::-webkit-scrollbar {
+          width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: #0f1115;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: #f5ac3b;
+          border-radius: 10px;
         }
       `}</style>
     </div>
