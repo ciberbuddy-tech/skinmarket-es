@@ -25,21 +25,29 @@ class SteamBot {
     }
 
     async logIn() {
-        if (!this.credentials.accountName || !this.credentials.password) {
-            console.warn("[BOT] Credenciales de bot no configuradas en .env. El bot no se iniciará.");
+        if (!this.credentials.accountName || !this.credentials.password ||
+            this.credentials.accountName === 'tu_usuario_steam' ||
+            this.credentials.password === 'tu_password_steam') {
+            console.warn("[BOT] CONFIGURACIÓN REQUERIDA: Las credenciales de Steam en el archivo .env son valores de ejemplo.");
+            console.warn("[BOT] Por favor, edita el archivo .env con tu usuario y contraseña real para activar los retiros automáticos.");
+            console.warn("[BOT] El sitio funcionará en MODO SIMULACIÓN para los retiros hasta que se configure.");
             return;
         }
 
-        console.log(`[BOT] Intentando iniciar sesión como ${this.credentials.accountName}...`);
+        console.log(`[BOT] Intentando iniciar sesión en Steam como ${this.credentials.accountName}...`);
 
-        this.client.logOn({
-            accountName: this.credentials.accountName,
-            password: this.credentials.password,
-            twoFactorCode: SteamTotp.generateAuthCode(this.credentials.sharedSecret)
-        });
+        try {
+            this.client.logOn({
+                accountName: this.credentials.accountName,
+                password: this.credentials.password,
+                twoFactorCode: SteamTotp.generateAuthCode(this.credentials.sharedSecret)
+            });
+        } catch (err) {
+            console.error("[BOT] Error al generar código 2FA o iniciar proceso de login:", err.message);
+        }
 
-        this.client.on('loggedOn', () => {
-            console.log("[BOT] Sesión iniciada en Steam correctamente.");
+        this.client.on('loggedOn', (details) => {
+            console.log("[BOT] ¡Sesión iniciada con éxito! Conectado a Steam como:", this.client.steamID.getSteamID64());
         });
 
         this.client.on('webSession', (sessionID, cookies) => {
@@ -50,7 +58,12 @@ class SteamBot {
         });
 
         this.client.on('error', (err) => {
-            console.error("[BOT] Error fatal:", err);
+            console.error("[BOT] Error de sesión en Steam:", err.message);
+            if (err.eresult === 5) {
+                console.error("[BOT] CONSEJO: El error 'InvalidPassword' indica que la contraseña o el usuario en .env son incorrectos.");
+            } else if (err.eresult === 85) {
+                console.error("[BOT] CONSEJO: Se necesita el Shared Secret correcto para el 2FA.");
+            }
             this.isLoggedIn = false;
         });
     }
