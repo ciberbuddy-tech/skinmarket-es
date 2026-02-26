@@ -16,6 +16,7 @@ const CaseView = React.lazy(() => import("./pages/CaseView"));
 const Battles = React.lazy(() => import("./pages/Battles"));
 const Upgrade = React.lazy(() => import("./pages/Upgrade"));
 const Ranking = React.lazy(() => import("./pages/Ranking"));
+const Admin = React.lazy(() => import("./pages/Admin"));
 const Inventory = React.lazy(() => import("./components/Inventory"));
 const Privacy = React.lazy(() => import("./pages/Privacy"));
 const Terms = React.lazy(() => import("./pages/Terms"));
@@ -44,6 +45,7 @@ export default function App() {
                 <Route path="/ranking" element={<Ranking />} />
                 <Route path="/upgrade" element={<ProtectedRoute><Upgrade /></ProtectedRoute>} />
                 <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+                <Route path="/admin" element={<ProtectedRoute adminOnly={true}><Admin /></ProtectedRoute>} />
               </Routes>
             </Suspense>
           </main>

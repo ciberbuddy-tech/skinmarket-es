@@ -237,7 +237,7 @@ export default function CaseView() {
         return shuffled.slice(0, 10).sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
     }, [allSkins, caseData]);
 
-    const startSpin = () => {
+    const startSpin = async () => {
         if (!user) return alert("Inicia sesión para abrir cajas");
         const totalCost = parseFloat(caseData.price) * quantity;
         if (totalCost > user.balance) {
@@ -246,75 +246,65 @@ export default function CaseView() {
         }
 
         setBalanceError("");
-        setIsSpinning(true);
         setHasCompleted(false);
         setResults([]);
         setHasActioned(false);
 
         if (!validSkins || validSkins.length === 0) {
             alert("Espera un segundo a que las skins carguen...");
-            setIsSpinning(false);
             return;
         }
 
-        // Probability logic: Lower index (lower price) has higher probability
-        // Using a power distribution: roll ^ 2 will favor lower values more heavily
-        const getSkinResult = () => {
-            const roll = Math.random();
-            // Distribution: 
-            // 0 - 0.5: Item 0-2 (Cheapest)
-            // 0.5 - 0.8: Item 3-5 (Mid)
-            // 0.8 - 0.95: Item 6-8 (Rare)
-            // 0.95 - 1.0: Item 9 (Jackpot)
+        try {
+            const token = localStorage.getItem("skinmarket_token");
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/cases/open`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ caseId: caseData.id, quantity })
+            });
+            const data = await res.json();
 
-            let index = 0;
-            if (roll < 0.5) index = Math.floor(Math.random() * 3);
-            else if (roll < 0.8) index = 3 + Math.floor(Math.random() * 3);
-            else if (roll < 0.95) index = 6 + Math.floor(Math.random() * 3);
-            else index = 9;
-
-            // Clamp index to validSkins range
-            index = Math.min(index, validSkins.length - 1);
-            return validSkins[index];
-        };
-
-        const expectedResults = [];
-        for (let i = 0; i < quantity; i++) {
-            const finalSkin = getSkinResult();
-            if (!finalSkin) {
-                // Fallback if somehow still empty
-                setIsSpinning(false);
-                alert("Error al generar contenido de la caja. Inténtalo de nuevo.");
+            if (!res.ok) {
+                alert(data.error || "Error al abrir la caja");
                 return;
             }
-            expectedResults.push({ ...finalSkin, id: `${finalSkin.id}-${Date.now()}-${i}` });
-        }
 
-        const newReel = [];
-        for (let j = 0; j < 80; j++) {
-            newReel.push(validSkins[Math.floor(Math.random() * validSkins.length)]);
-        }
-        newReel.push(...expectedResults);
-        for (let j = 0; j < 10; j++) {
-            newReel.push(validSkins[Math.floor(Math.random() * validSkins.length)]);
-        }
+            // Los items devueltos son nuestros "esperados"
+            const expectedResults = data.items.map(item => ({
+                ...item,
+                image: validSkins.find(s => s.name === item.name)?.image || item.image || "https://www.freeiconspng.com/uploads/no-image-icon-6.png"
+            }));
 
-        setReel(newReel);
-        setResults(expectedResults);
+            // Generar Reel
+            const newReel = [];
+            for (let j = 0; j < 80; j++) {
+                newReel.push(validSkins[Math.floor(Math.random() * validSkins.length)]);
+            }
+            newReel.push(...expectedResults);
+            for (let j = 0; j < 10; j++) {
+                newReel.push(validSkins[Math.floor(Math.random() * validSkins.length)]);
+            }
 
-        const newBalance = parseFloat((user.balance - totalCost).toFixed(2));
-        updateUser({ ...user, balance: newBalance });
+            setReel(newReel);
+            setResults(expectedResults);
+            setIsSpinning(true);
+
+            // Actualizar balance inmediatamente
+            updateUser({ ...user, balance: parseFloat(data.newBalance) });
+
+        } catch (err) {
+            console.error("Error opening case:", err);
+            alert("Error de conexión al abrir la caja");
+        }
     };
 
-    const handleSpinComplete = useCallback(async () => {
+    const handleSpinComplete = useCallback(() => {
         setIsSpinning(false);
         setHasCompleted(true);
-        // Guardar persistente en la DB y obtener IDs reales
-        const savedItems = await depositSkins(results);
-        if (savedItems) {
-            setResults(savedItems);
-        }
-    }, [results, depositSkins]);
+    }, []);
 
     const handleSellAll = async () => {
         if (hasActioned) return;

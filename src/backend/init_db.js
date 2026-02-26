@@ -40,11 +40,55 @@ const initDb = async () => {
     );
   `;
 
+  const auditLogsQuery = `
+    CREATE TABLE IF NOT EXISTS logs_auditoria (
+        log_id SERIAL PRIMARY KEY,
+        usuario_id INTEGER REFERENCES usuarios(usuario_id),
+        accion VARCHAR(100) NOT NULL,
+        detalles TEXT,
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
+  const transaccionesQuery = `
+    CREATE TABLE IF NOT EXISTS transacciones (
+        transaccion_id SERIAL PRIMARY KEY,
+        usuario_id INTEGER REFERENCES usuarios(usuario_id),
+        tipo VARCHAR(20) NOT NULL, -- 'deposito', 'retiro', 'venta', 'compra', 'premio'
+        monto DECIMAL(15, 2) NOT NULL,
+        metodo VARCHAR(50),
+        status VARCHAR(20) DEFAULT 'completado',
+        detalles TEXT,
+        fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
+  const settingsQuery = `
+    CREATE TABLE IF NOT EXISTS configuracion (
+        clave VARCHAR(50) PRIMARY KEY,
+        valor JSONB NOT NULL,
+        ultima_modificacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
+  const seedSettingsQuery = `
+    INSERT INTO configuracion (clave, valor) 
+    VALUES ('probabilidades', '{"covert": 0.5, "classified": 2.0, "restricted": 15.0, "mil_spec": 82.5}')
+    ON CONFLICT (clave) DO NOTHING;
+  `;
+
   try {
     await db.query(checkTableQuery);
     await db.query(alterTableQuery);
     await db.query(checkInventoryTableQuery);
-    console.log("Tablas 'usuarios' e 'inventario' verificadas/creadas correctamente.");
+    await db.query(auditLogsQuery);
+    await db.query(transaccionesQuery);
+    await db.query(settingsQuery);
+    await db.query(seedSettingsQuery);
+    console.log("Tablas 'usuarios', 'inventario', 'logs_auditoria', 'transacciones' y 'configuracion' verificadas/creadas correctamente.");
+
     process.exit(0);
   } catch (err) {
     console.error("Error al inicializar la base de datos:", err);

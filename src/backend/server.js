@@ -1,29 +1,138 @@
+console.log("=== INICIO DE SERVER.JS ===");
 import express from "express";
 import cors from "cors";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import db from "./db.js";
 import steamBot from "./steamBot.js";
 import dotenv from "dotenv";
+import session from "express-session";
+import { createClient } from "redis";
+import { RedisStore } from "connect-redis";
+import helmet from "helmet";
+import hpp from "hpp";
+import rateLimit from "express-rate-limit";
+import passport from "passport";
+import { Strategy as SteamStrategy } from "passport-steam";
+
 dotenv.config();
+
+// Iniciar Bot de Steam
+// Iniciar Bot de Steam (Solo si hay credenciales configuradas)
+if (process.env.BOT_USERNAME && process.env.BOT_USERNAME !== 'tu_usuario_steam') {
+  steamBot.logIn();
+} else {
+  console.log("[BOT] Bot no configurado. Iniciando en modo simulación.");
+}
+
+console.log("Iniciando servidor...");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 
-if (!JWT_SECRET) {
-  console.error("FATAL: JWT_SECRET no está definido en el archivo .env");
-  process.exit(1);
-}
+// Configurar Redis
+console.log("Conectando a Redis...");
+const redisClient = createClient({
+  url: process.env.REDIS_URL || "redis://localhost:6379"
+});
+redisClient.connect()
+  .then(() => console.log("Redis conectado"))
+  .catch(err => console.error("Error conectando a Redis:", err));
 
-// Iniciar Bot de Steam
-steamBot.logIn();
-
-app.use(cors());
+// Middlewares de Seguridad
+app.use(helmet());
+app.use(hpp());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  credentials: true
+}));
 app.use(express.json());
 
-// Middleware para verificar JWT
+// Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // Límite de 100 peticiones por IP
+  message: "Demasiadas peticiones desde esta IP, por favor intenta de nuevo más tarde."
+});
+app.use("/api/", limiter);
+
+// Configurar Sesiones con Redis
+app.use(session({
+  store: new RedisStore({ client: redisClient }),
+  secret: JWT_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 horas
+  }
+}));
+
+// Inicializar Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Serialization de Passport
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((obj, done) => done(null, obj));
+
+// Estrategia de Steam
+passport.use(new SteamStrategy({
+  returnURL: `${process.env.BACKEND_URL || 'http://localhost:3001'}/api/auth/steam/return`,
+  realm: process.env.BACKEND_URL || 'http://localhost:3001',
+  apiKey: process.env.STEAM_API_KEY
+}, async (identifier, profile, done) => {
+  try {
+    const steamId = profile.id;
+    const nombre = profile.displayName;
+
+    // Buscar o crear usuario
+    let result = await db.query("SELECT * FROM usuarios WHERE steam_id = $1", [steamId]);
+
+    if (result.rows.length === 0) {
+      // Crear nuevo usuario si no existe
+      result = await db.query(
+        "INSERT INTO usuarios (nombre_usuario, email, password_hash, steam_id, nivel, experiencia) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+        [nombre, `${steamId}@steam.auth`, 'steam_no_password', steamId, 0, 0]
+      );
+    }
+
+    return done(null, result.rows[0]);
+  } catch (err) {
+    return done(err);
+  }
+}));
+
+// Helper para Auditoría
+async function logAction(usuario_id, accion, detalles = null) {
+  try {
+    await db.query(
+      "INSERT INTO logs_auditoria (usuario_id, accion, detalles) VALUES ($1, $2, $3)",
+      [usuario_id, accion, detalles ? JSON.stringify(detalles) : null]
+    );
+  } catch (err) {
+    console.error("Error al registrar log de auditoría:", err);
+  }
+}
+
+// Helper para Transacciones
+async function recordTransaction(usuario_id, tipo, monto, metodo, detalles = null) {
+  try {
+    await db.query(
+      "INSERT INTO transacciones (usuario_id, tipo, monto, metodo, detalles) VALUES ($1, $2, $3, $4, $5)",
+      [usuario_id, tipo, monto, metodo, detalles]
+    );
+  } catch (err) {
+    console.error("Error al registrar transacción:", err);
+  }
+}
+
+// Middleware para verificar JWT (actualizado para soportar sesiones si es necesario)
 const authenticateToken = (req, res, next) => {
+  if (req.isAuthenticated()) return next(); // Steam Auth Session
+
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -38,10 +147,23 @@ const authenticateToken = (req, res, next) => {
 
 // --- AUTH ROUTES ---
 
+app.get('/api/auth/steam', passport.authenticate('steam', { failureRedirect: '/login' }), (req, res) => { });
+
+app.get('/api/auth/steam/return', passport.authenticate('steam', { failureRedirect: '/login' }), (req, res) => {
+  // Generar token JWT para compatibilidad con el sistema actual
+  const user = req.user;
+  const token = jwt.sign({ id: user.usuario_id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
+
+  // Redirigir al frontend con el token
+  res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?token=${token}`);
+});
+
 app.post("/api/register", async (req, res) => {
   const { nombre_usuario, email, password } = req.body;
+  console.log(`[AUTH] Intento de registro: ${nombre_usuario} (${email})`);
 
   if (!nombre_usuario || !email || !password) {
+    console.log("[AUTH] Registro fallido: faltan campos");
     return res.status(400).json({ error: "Todos los campos son obligatorios" });
   }
 
@@ -55,9 +177,10 @@ app.post("/api/register", async (req, res) => {
     const user = result.rows[0];
     const token = jwt.sign({ id: user.usuario_id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
 
+    console.log(`[AUTH] Usuario registrado con éxito: ${user.usuario_id}`);
     res.status(201).json({ user, token });
   } catch (err) {
-    console.error(err);
+    console.error("[AUTH] Error en registro:", err);
     if (err.code === '23505') {
       return res.status(400).json({ error: "El usuario o email ya existe" });
     }
@@ -134,7 +257,10 @@ app.post("/api/claim-daily", authenticateToken, async (req, res) => {
 
     // 12 hours limit for now (as requested by user for the first case)
     const hoursWait = 12;
-    if (lastClaim && (now - lastClaim) < hoursWait * 60 * 60 * 1000) {
+    // Añadimos un pequeño margen de 5 segundos para evitar errores de sincronización de reloj
+    const bufferMs = 5000;
+
+    if (lastClaim && (now - lastClaim) < (hoursWait * 60 * 60 * 1000 - bufferMs)) {
       const remaining = hoursWait * 60 * 60 * 1000 - (now - lastClaim);
       return res.status(400).json({
         error: "Aún no puedes reclamar",
@@ -160,6 +286,73 @@ app.post("/api/claim-daily", authenticateToken, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error al procesar reclamo diario" });
+  }
+});
+
+// --- CASE OPENING ROUTES ---
+
+app.post("/api/cases/open", authenticateToken, async (req, res) => {
+  const { caseId, quantity } = req.body;
+
+  try {
+    // 1. Obtener datos de la caja (esto debería venir de DB, pero por ahora usamos los constantes del frontend si es necesario)
+    // Para simplificar, asumiremos que el frontend envía los datos básicos o consultamos una tabla de cajas
+    // Como no hay tabla de cajas aún, usaremos un mock basado en el ID por ahora
+    const casePrices = { "eco-1": 1.5, "mid-1": 5.0, "premium-1": 25.0 }; // Ejemplo
+    const casePrice = casePrices[caseId] || 2.5;
+    const totalCost = casePrice * quantity;
+
+    const userResult = await db.query("SELECT saldo FROM usuarios WHERE usuario_id = $1", [req.user.id]);
+    const user = userResult.rows[0];
+
+    if (user.saldo < totalCost) {
+      return res.status(400).json({ error: "Saldo insuficiente" });
+    }
+
+    // 2. Obtener probabilidades de la DB
+    const configResult = await db.query("SELECT valor FROM configuracion WHERE clave = 'probabilidades'");
+    const probs = configResult.rows[0]?.valor || { covert: 0.5, classified: 2, restricted: 15, mil_spec: 82.5 };
+
+    // 3. Simular pool de skins (en un sistema real esto vendría de una tabla de skins_por_caja)
+    // Usaremos un pool genérico basado en la rareza
+    const results = [];
+    for (let i = 0; i < quantity; i++) {
+      const roll = Math.random() * 100;
+      let rarity = "Mil-Spec Grade";
+
+      if (roll < probs.covert) rarity = "Covert";
+      else if (roll < probs.covert + probs.classified) rarity = "Classified";
+      else if (roll < probs.covert + probs.classified + probs.restricted) rarity = "Restricted";
+
+      // Mock de item (esto se conectaría con la tabla de items)
+      const mockItem = {
+        name: `${rarity} Item #${Math.floor(Math.random() * 1000)}`,
+        price: rarity === "Covert" ? 50 : (rarity === "Classified" ? 15 : 2),
+        image: "",
+        rarity: rarity,
+        marketable: true
+      };
+
+      const insertResult = await db.query(
+        "INSERT INTO inventario (usuario_id, name, price, image, rarity, marketable) VALUES ($1, $2, $3, $4, $5, $6) RETURNING item_id as id, name, price, image, rarity, marketable, status",
+        [req.user.id, mockItem.name, mockItem.price, mockItem.image, mockItem.rarity, mockItem.marketable]
+      );
+      results.push(insertResult.rows[0]);
+    }
+
+    // 4. Actualizar saldo
+    const newBalanceResult = await db.query(
+      "UPDATE usuarios SET saldo = saldo - $1 WHERE usuario_id = $2 RETURNING saldo",
+      [totalCost, req.user.id]
+    );
+
+    await recordTransaction(req.user.id, 'apertura_caja', totalCost, 'saldo_sitio', `Apertura de ${quantity}x ${caseId}`);
+    await logAction(req.user.id, 'ABRIR_CAJA', { caseId, quantity, winnings: results.map(r => r.name) });
+
+    res.json({ success: true, items: results, newBalance: newBalanceResult.rows[0].saldo });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error al abrir la caja" });
   }
 });
 
@@ -207,6 +400,9 @@ app.post("/api/inventory/sell", authenticateToken, async (req, res) => {
     await db.query("UPDATE inventario SET status = 'sold' WHERE item_id = $1", [itemId]);
     const balanceResult = await db.query("UPDATE usuarios SET saldo = saldo + $1 WHERE usuario_id = $2 RETURNING saldo", [item.price, req.user.id]);
 
+    await recordTransaction(req.user.id, 'venta', item.price, 'inventario_sitio', `Venta de ${item.name}`);
+    await logAction(req.user.id, 'VENDER_ITEM', { itemId, itemName: item.name, price: item.price });
+
     res.json({ success: true, newBalance: balanceResult.rows[0].saldo });
   } catch (err) {
     res.status(500).json({ error: "Error al vender objeto" });
@@ -234,11 +430,18 @@ app.post("/api/inventory/withdraw", authenticateToken, async (req, res) => {
       try {
         await steamBot.sendWithdrawOffer(user.steam_id, user.trade_token, item.name);
         await db.query("UPDATE inventario SET status = 'withdrawn' WHERE item_id = $1", [itemId]);
+
+        await recordTransaction(req.user.id, 'retiro', item.price, 'steam_trade', `Retiro real de ${item.name}`);
+        await logAction(req.user.id, 'RETIRAR_ITEM_REAL', { itemId, itemName: item.name });
+
         return res.json({ success: true, message: "Oferta real enviada a Steam." });
       } catch (botErr) {
         console.error("[WITHDRAW] Bot error:", botErr.message);
         // Fallback a simulación si el bot falla (ej: no tiene el objeto)
         await db.query("UPDATE inventario SET status = 'withdrawing' WHERE item_id = $1", [itemId]);
+
+        await recordTransaction(req.user.id, 'retiro', item.price, 'simulado_pendiente', `Retiro simulado de ${item.name}`);
+
         return res.json({ success: true, message: "El bot no tiene el objeto físico. Retiro marcado como pendiente (simulado)." });
       }
     } else {
@@ -304,6 +507,10 @@ app.post("/api/update-balance", authenticateToken, async (req, res) => {
       [parseFloat(amount), req.user.id]
     );
     console.log(`[BALANCE] Éxito. Nuevo saldo en DB: ${result.rows[0].saldo}`);
+
+    await recordTransaction(req.user.id, 'deposito', parseFloat(amount), 'steam_deposit', 'Depósito de skins o saldo');
+    await logAction(req.user.id, 'ACTUALIZAR_SALDO', { amount });
+
     res.json({ success: true, newBalance: result.rows[0].saldo });
   } catch (err) {
     console.error("[BALANCE] Error:", err);
@@ -389,6 +596,68 @@ app.get("/api/steam-price", async (req, res) => {
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: "Error fetching price" });
+  }
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date(), version: "1.0.0" });
+});
+
+// --- ADMIN ROUTES ---
+
+const isAdmin = async (req, res, next) => {
+  try {
+    const result = await db.query("SELECT role FROM usuarios WHERE usuario_id = $1", [req.user.id]);
+    if (result.rows[0]?.role === 'admin') {
+      next();
+    } else {
+      console.warn(`[ADMIN] Intento de acceso no autorizado: Usuario ID ${req.user.id}`);
+      res.status(403).json({ error: "Acceso denegado: Se requiere rol de administrador" });
+    }
+  } catch (err) {
+    console.error("[ADMIN] Error en middleware isAdmin:", err);
+    res.status(500).json({ error: "Error al verificar permisos" });
+  }
+};
+
+app.get("/api/admin/stats", authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const userCount = await db.query("SELECT COUNT(*) FROM usuarios");
+    const transCount = await db.query("SELECT COUNT(*) FROM transacciones");
+    const totalDeposited = await db.query("SELECT SUM(monto) FROM transacciones WHERE tipo = 'deposito'");
+    const totalWithdrawn = await db.query("SELECT SUM(monto) FROM transacciones WHERE tipo = 'retiro'");
+
+    res.json({
+      users: userCount.rows[0].count,
+      transactions: transCount.rows[0].count,
+      deposited: totalDeposited.rows[0].sum || 0,
+      withdrawn: totalWithdrawn.rows[0].sum || 0
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error al obtener estadísticas" });
+  }
+});
+
+app.get("/api/admin/settings/probabilities", authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const result = await db.query("SELECT valor FROM configuracion WHERE clave = 'probabilidades'");
+    res.json(result.rows[0]?.valor || {});
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error al obtener probabilidades" });
+  }
+});
+
+app.post("/api/admin/settings/probabilities", authenticateToken, isAdmin, async (req, res) => {
+  const { probabilities } = req.body;
+  try {
+    await db.query("UPDATE configuracion SET valor = $1, ultima_modificacion = NOW() WHERE clave = 'probabilidades'", [JSON.stringify(probabilities)]);
+    await logAction(req.user.id, "UPDATE_SETTINGS", { key: 'probabilidades', value: probabilities });
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error al actualizar probabilidades" });
   }
 });
 
