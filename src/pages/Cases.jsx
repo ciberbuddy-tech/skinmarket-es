@@ -1,870 +1,585 @@
-import { useAuth } from "../context/AuthContext";
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { getRarityColor } from "../constants/colors.js";
+import { useAuth } from "../context/useAuth";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { generateAllCases } from "../constants/cases.js";
 import { useFetchSkins } from "../hooks/useFetchSkins";
+import { getRarityColor } from "../constants/colors";
 
-// Función para obtener color y estilo de la caja según rariedad
-const getCaseStyle = (rarity) => {
-  const styles = {
-    "mil-spec": {
-      gradient: "linear-gradient(135deg, #64748b 0%, #475569 100%)",
-      glow: "0 0 30px rgba(100, 116, 139, 0.4)",
-      border: "#64748b",
-      icon: "🟢"
-    },
-    "restricted": {
-      gradient: "linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)",
-      glow: "0 0 30px rgba(59, 130, 246, 0.5)",
-      border: "#3b82f6",
-      icon: "🔵"
-    },
-    "classified": {
-      gradient: "linear-gradient(135deg, #a855f7 0%, #6b21a8 100%)",
-      glow: "0 0 30px rgba(168, 85, 247, 0.5)",
-      border: "#a855f7",
-      icon: "🟣"
-    },
-    "covert": {
-      gradient: "linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)",
-      glow: "0 0 30px rgba(220, 38, 38, 0.5)",
-      border: "#dc2626",
-      icon: "🔴"
-    }
-  };
-  return styles[rarity] || styles["mil-spec"];
-};
+const DailyRouletteModal = ({ isOpen, onClose, rewardAmount, skinsPool }) => {
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [hasRevealed, setHasRevealed] = useState(false);
+  const [reel, setReel] = useState([]);
+  const containerRef = useRef(null);
 
-// Componente de tarjeta de caja mejorado
-const CaseCard = ({ caseData, allSkins, loading: parentLoading }) => {
-  const { user, updateUser } = useAuth();
-  const [expanded, setExpanded] = useState(false);
-  const [quantity, setQuantity] = useState(1);
-  const [results, setResults] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [balanceError, setBalanceError] = useState("");
-  const [hoverEffect, setHoverEffect] = useState(false);
-  const caseStyle = getCaseStyle(caseData.rarity);
-
-  // Crear array ponderado: skins baratas más repetidas, caras menos
-  const createWeightedSkinList = (skins) => {
-    const weighted = [];
-    skins.forEach(skin => {
-      // Usar precio del skin de la API
-      const price = Math.max(0.5, skin.price || 0.5);
-      // Weight inverso: skin más caro = menos peso = menos opciones
-      const weight = Math.max(1, Math.floor(500 / (price * 10)));
-      
-      for (let i = 0; i < weight; i++) {
-        weighted.push({
-          ...skin,
-          price: parseFloat(price.toFixed(2))
-        });
+  useEffect(() => {
+    if (isOpen && !isSpinning && !hasRevealed) {
+      // Preparar el reel
+      const newReel = [];
+      for (let i = 0; i < 60; i++) {
+        newReel.push(skinsPool[Math.floor(Math.random() * skinsPool.length)]);
       }
-    });
-    return weighted;
-  };
+      // El "ganador" será una skin ficticia que represente el valor o simplemente una skin cara/barata
+      // Para simular KeyDrop, pondremos un item especial al final o la skin que toque
+      const winnerSkin = skinsPool.find(s => s.price >= rewardAmount) || skinsPool[0];
+      newReel.push(winnerSkin);
+      for (let i = 0; i < 5; i++) {
+        newReel.push(skinsPool[Math.floor(Math.random() * skinsPool.length)]);
+      }
+      setReel(newReel);
 
-  const openCases = useCallback(() => {
-    if (quantity < 1 || quantity > 100) {
-      setBalanceError("Abre entre 1 y 100 cajas");
-      return;
-    }
-
-    const totalCost = parseFloat(caseData.price) * quantity;
-    
-    if (!user || totalCost > user.balance) {
-      setBalanceError(`Necesitas €${totalCost.toFixed(2)} (Tienes €${user?.balance?.toFixed(2) || 0})`);
-      return;
-    }
-
-    setLoading(true);
-    setBalanceError("");
-    
-    // Filtrar skins que coincidan con la rareza de la caja
-    const validSkins = allSkins.filter(skin => 
-      skin.rarity && (
-        (caseData.rarity === "mil-spec" && (skin.rarity === "Mil-Spec Grade" || skin.rarity === "Restricted")) ||
-        (caseData.rarity === "classified" && (skin.rarity === "Restricted" || skin.rarity === "Classified")) ||
-        (caseData.rarity === "covert" && (skin.rarity === "Classified" || skin.rarity === "Covert"))
-      )
-    );
-
-    if (validSkins.length === 0) {
-      setBalanceError("Sin skins disponibles para esta caja");
-      setLoading(false);
-      return;
-    }
-
-    // Crear lista ponderada para cada apertura
-    const weightedPool = createWeightedSkinList(validSkins);
-
-    // Animar carrusel
-    let spinCount = 0;
-    const spinInterval = setInterval(() => {
-      spinCount++;
-      if (spinCount > 50) {
-        clearInterval(spinInterval);
-        
-        // Resultados finales después del spin
-        const allResults = [];
-        let totalValue = 0;
-        
-        for (let i = 0; i < quantity; i++) {
-          const finalSkin = weightedPool[Math.floor(Math.random() * weightedPool.length)];
-          const skinValue = parseFloat(finalSkin.price.toFixed(2));
-          allResults.push({
-            id: `${finalSkin.id}-${Date.now()}-${i}`,
-            name: finalSkin.name,
-            image: finalSkin.image,
-            price: skinValue,
-            rarity: finalSkin.rarity
-          });
-          totalValue += skinValue;
+      // Iniciar giro tras un breve delay
+      setTimeout(() => {
+        setIsSpinning(true);
+        if (containerRef.current) {
+          const cardWidth = 160;
+          const winnerIndex = newReel.length - 6;
+          const offset = winnerIndex * cardWidth - (window.innerWidth < 600 ? 100 : 250); // Ajuste centro
+          containerRef.current.style.transition = "transform 6s cubic-bezier(0.1, 0.7, 0.1, 1)";
+          containerRef.current.style.transform = `translateX(-${offset}px)`;
         }
+      }, 500);
 
-        setResults({ skins: allResults, totalValue: parseFloat(totalValue.toFixed(2)) });
+      setTimeout(() => {
+        setHasRevealed(true);
+      }, 7000);
+    }
+  }, [isOpen, skinsPool, rewardAmount]);
 
-        // Actualizar inventario del usuario
-        const newInventory = [...(user.inventory || []), ...allResults];
-        const newBalance = parseFloat((user.balance - totalCost).toFixed(2));
-
-        updateUser({
-          ...user,
-          inventory: newInventory,
-          balance: newBalance
-        });
-
-        setLoading(false);
-      }
-    }, 30);
-  }, [quantity, caseData, user, allSkins, updateUser]);
+  if (!isOpen) return null;
 
   return (
-    <div
-      onMouseEnter={() => setHoverEffect(true)}
-      onMouseLeave={() => setHoverEffect(false)}
-      style={{
-        background: caseData.bgGradient,
-        borderRadius: "16px",
-        padding: "0",
-        cursor: "pointer",
-        transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-        transform: hoverEffect ? "translateY(-8px)" : "translateY(0)",
-        boxShadow: hoverEffect 
-          ? `0 20px 40px rgba(0, 255, 136, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)` 
-          : `0 8px 24px rgba(0,0,0,0.3)`,
-        border: "1px solid rgba(255,255,255,0.1)",
-        overflow: "hidden",
-        position: "relative"
-      }}
-    >
-      {/* Efecto de brillo en hover */}
-      {hoverEffect && (
-        <div style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)",
-          animation: "shine 0.6s ease-in-out"
-        }}></div>
-      )}
-
-      {/* Badge de categoría con color dinámico */}
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 1000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)'
+    }}>
       <div style={{
-        position: "absolute",
-        top: "12px",
-        right: "12px",
-        background: "rgba(0, 0, 0, 0.7)",
-        backdropFilter: "blur(10px)",
-        padding: "6px 12px",
-        borderRadius: "20px",
-        fontSize: "0.75rem",
-        fontWeight: "bold",
-        color: caseStyle.border,
-        border: `1px solid ${caseStyle.border}`,
-        zIndex: 2,
-        boxShadow: caseStyle.glow
+        width: '100%', maxWidth: '900px', background: '#16191e', borderRadius: '40px',
+        border: '1px solid rgba(255,255,255,0.05)', padding: '40px', position: 'relative', overflow: 'hidden'
       }}>
-        {caseStyle.icon} {caseData.rarity.toUpperCase()}
-      </div>
+        <h2 style={{ color: 'white', textAlign: 'center', marginBottom: '30px', fontWeight: '900', letterSpacing: '2px' }}>RECOMPENSA DIARIA</h2>
 
-      {/* Contenedor interior con efecto de profundidad */}
-      <div style={{ 
-        padding: "20px",
-        position: "relative",
-        background: `linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 100%)`
-      }}>
-        {/* Efecto de caja 3D */}
         <div style={{
-          position: "absolute",
-          top: "40px",
-          left: "20px",
-          width: "100%",
-          height: "100%",
-          background: caseStyle.gradient,
-          opacity: "0.15",
-          borderRadius: "8px",
-          transform: "skewY(-2deg)",
-          zIndex: "0"
-        }}></div>
+          height: '200px', background: '#0c0d10', border: '2px solid rgba(255,255,255,0.05)',
+          borderRadius: '24px', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center'
+        }}>
+          {/* Selector central */}
+          <div style={{
+            position: 'absolute', left: '50%', top: 0, bottom: 0, width: '4px',
+            background: '#f5ac3b', zIndex: 10, transform: 'translateX(-50%)', boxSShadow: '0 0 20px #f5ac3b'
+          }} />
 
-        {/* Header */}
-        <div
-          onClick={() => !loading && setExpanded(!expanded)}
-          style={{ cursor: !loading ? "pointer" : "default", position: "relative", zIndex: 1 }}
-        >
-          <div style={{ 
-            fontSize: "3rem", 
-            marginBottom: "12px", 
-            display: "inline-block",
-            animation: hoverEffect ? "bounce 0.6s ease-in-out" : "none"
-          }}>
-            {caseData.emoji}
+          <div ref={containerRef} style={{ display: 'flex', gap: '10px', paddingLeft: '50%', transition: 'none' }}>
+            {reel.map((skin, i) => (
+              <div key={i} style={{
+                minWidth: '150px', height: '160px', background: 'rgba(255,255,255,0.03)',
+                borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                justifyContent: 'center', padding: '10px', borderBottom: `4px solid ${getRarityColor(skin?.rarity || 'Common')}`
+              }}>
+                <img src={skin?.image} style={{ width: '80px', height: 'auto', marginBottom: '10px' }} />
+                <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>{skin?.name}</div>
+              </div>
+            ))}
           </div>
-          <h3 style={{
-            margin: "8px 0",
-            color: "white",
-            fontSize: "1.2rem",
-            fontWeight: "bold",
-            letterSpacing: "-0.5px"
-          }}>
-            {caseData.name}
-          </h3>
-          <p style={{
-            margin: "4px 0",
-            color: "rgba(255,255,255,0.6)",
-            fontSize: "0.85rem"
-          }}>
-            {allSkins.filter(s => {
-              const price = Math.max(0.5, s.price || 0.5);
-              return (
-                (caseData.rarity === "mil-spec" && (s.rarity === "Mil-Spec Grade" || s.rarity === "Restricted")) ||
-                (caseData.rarity === "classified" && (s.rarity === "Restricted" || s.rarity === "Classified")) ||
-                (caseData.rarity === "covert" && (s.rarity === "Classified" || s.rarity === "Covert"))
-              );
-            }).length} skins disponibles
-          </p>
         </div>
 
-        {/* Precio y botón expand */}
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginTop: "16px",
-          paddingTop: "16px",
-          borderTop: "1px solid rgba(255,255,255,0.1)"
-        }}>
-          <div>
-            <div style={{
-              fontSize: "2rem",
-              fontWeight: "bold",
-              color: "#00ff88",
-              letterSpacing: "-1px"
-            }}>
-              €{parseFloat(caseData.price).toFixed(2)}
-            </div>
-            <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)" }}>
-              por caja
-            </div>
-          </div>
-          <button
-            onClick={() => !loading && setExpanded(!expanded)}
-            disabled={loading}
+        <AnimatePresence>
+          {hasRevealed && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{ textAlign: 'center', marginTop: '30px' }}
+            >
+              <div style={{ color: '#10b981', fontSize: '2.5rem', fontWeight: '900', marginBottom: '10px' }}>
+                +{rewardAmount}€
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '20px', fontWeight: 'bold' }}>AÑADIDOS A TU SALDO</div>
+              <button
+                onClick={() => {
+                  setHasRevealed(false);
+                  setIsSpinning(false);
+                  onClose();
+                }}
+                style={{
+                  padding: '15px 40px', borderRadius: '20px', border: 'none',
+                  background: 'linear-gradient(90deg, #f5ac3b, #ffba52)', fontWeight: '900', cursor: 'pointer'
+                }}
+              >ACEPTAR</button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
+const DailyCard = ({ dc, onClaimSuccess }) => {
+  const { user, claimDaily } = useAuth();
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [isClaiming, setIsClaiming] = useState(false);
+
+  useEffect(() => {
+    const calculateTime = () => {
+      if (!user?.ultimo_reclamo_diario) return 0;
+      const lastClaim = new Date(user.ultimo_reclamo_diario).getTime();
+      const waitTime = (dc.id === "daily-0" ? 12 : 24) * 60 * 60 * 1000;
+      const now = new Date().getTime();
+      const diff = waitTime - (now - lastClaim);
+      return Math.max(0, diff);
+    };
+
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTime());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [user, dc]);
+
+  const handleClaim = async (e) => {
+    e.stopPropagation();
+    if (timeLeft > 0) return;
+    setIsClaiming(true);
+    const res = await claimDaily();
+    if (res.success) {
+      onClaimSuccess(res.reward);
+    } else {
+      alert(res.error);
+    }
+    setIsClaiming(false);
+  };
+
+  const formatTime = (ms) => {
+    const h = Math.floor(ms / (1000 * 60 * 60));
+    const m = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    const s = Math.floor((ms % (1000 * 60)) / 1000);
+    return `${h}h ${m}m ${s}s`;
+  };
+
+  const canClaim = dc.unlocked && timeLeft === 0;
+
+  return (
+    <motion.div
+      whileHover={canClaim ? { scale: 1.02, y: -5 } : {}}
+      style={{
+        background: dc.unlocked ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.4)',
+        border: `1px solid ${dc.unlocked ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)'}`,
+        borderRadius: '24px', padding: '25px', textAlign: 'center', position: 'relative',
+        overflow: 'hidden', cursor: canClaim ? 'pointer' : 'default',
+        opacity: dc.unlocked ? 1 : 0.6,
+        transition: 'all 0.3s ease',
+        boxShadow: canClaim ? `0 10px 40px ${dc.color}11` : 'none'
+      }}
+    >
+      <div style={{
+        position: 'absolute', top: -50, right: -50, width: 150, height: 150,
+        background: dc.color, filter: 'blur(70px)', opacity: canClaim ? 0.15 : 0.05,
+        borderRadius: '50%', zIndex: 0
+      }} />
+
+      {!dc.unlocked && (
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, flexDirection: 'column', backdropFilter: 'blur(4px)' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '5px' }}>🔒</div>
+          <div style={{ fontWeight: '900', fontSize: '0.7rem' }}>NIVEL {dc.level} REQUERIDO</div>
+        </div>
+      )}
+
+      {dc.unlocked && timeLeft > 0 && (
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, flexDirection: 'column', backdropFilter: 'blur(2px)' }}>
+          <div style={{ fontSize: '1.2rem', marginBottom: '5px' }}>⏳</div>
+          <div style={{ fontWeight: '900', fontSize: '1.2rem', color: '#f5ac3b' }}>{formatTime(timeLeft)}</div>
+          <div style={{ fontSize: '0.6rem', fontWeight: 'bold' }}>HASTA RECARGA</div>
+        </div>
+      )}
+
+      <div style={{ fontSize: '4rem', marginBottom: '15px', position: 'relative', zIndex: 1, filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))' }}>
+        {dc.emoji}
+        {dc.id === "daily-0" && (
+          <div style={{ position: 'absolute', top: 0, right: 0, background: '#f5ac3b', color: 'black', padding: '2px 8px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: '900' }}>12H</div>
+        )}
+      </div>
+
+      <h4 style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: dc.color, fontWeight: '900', position: 'relative', zIndex: 1 }}>{dc.name}</h4>
+      <p style={{ margin: 0, fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', fontWeight: 'bold', position: 'relative', zIndex: 1 }}>
+        {dc.id === "daily-0" ? "Disponible cada 12h" : "Disponible cada 24h"}
+      </p>
+
+      <button
+        disabled={!canClaim || isClaiming}
+        onClick={handleClaim}
+        style={{
+          marginTop: '20px', width: '100%', padding: '14px', borderRadius: '15px',
+          background: canClaim ? dc.color : 'rgba(255,255,255,0.05)',
+          border: 'none', color: canClaim ? 'black' : 'rgba(255,255,255,0.2)',
+          fontWeight: '900', fontSize: '0.8rem', cursor: canClaim ? 'pointer' : 'default',
+          position: 'relative', zIndex: 1,
+          boxShadow: canClaim ? `0 8px 20px ${dc.color}44` : 'none',
+          transition: 'all 0.3s'
+        }}
+      >
+        {isClaiming ? "RECLAMANDO..." : (canClaim ? "RECLAMAR AHORA" : (timeLeft > 0 ? "EN ESPERA" : "RECLAMADO"))}
+      </button>
+    </motion.div>
+  );
+};
+
+const CaseCard = ({ caseData, validSkins }) => {
+  const navigate = useNavigate();
+
+  const coverSkin = useMemo(() => {
+    if (!validSkins || validSkins.length === 0) return null;
+
+    // Usamos el mismo algoritmo que CaseView para obtener las 10 skins exactas de esta caja
+    const seed = caseData.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const shuffled = [...validSkins].sort((a, b) => {
+      const valA = (a.id + seed).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const valB = (b.id + seed).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      return (valA % 100) - (valB % 100);
+    });
+
+    const casePool = shuffled.slice(0, 10).sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+
+    // El jackpot es la última skin (la más cara de las 10)
+    return casePool[casePool.length - 1];
+  }, [validSkins, caseData]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -8 }}
+      onClick={() => navigate(`/case/${caseData.id}`)}
+      style={{
+        background: 'rgba(255,255,255,0.02)',
+        borderRadius: '32px',
+        padding: '30px',
+        border: '1px solid rgba(255,255,255,0.05)',
+        cursor: 'pointer',
+        position: 'relative',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+        minHeight: '380px'
+      }}
+    >
+      {/* Background Glow & Gradient */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: caseData.bgGradient || `radial-gradient(circle at center, ${caseData.color}22 0%, #16191e 100%)`,
+        opacity: 0.15,
+        zIndex: 0
+      }} />
+      <div style={{
+        position: 'absolute',
+        top: '-50px',
+        right: '-50px',
+        width: '200px',
+        height: '200px',
+        background: caseData.color,
+        filter: 'blur(80px)',
+        opacity: 0.1,
+        borderRadius: '50%',
+        zIndex: 0
+      }} />
+
+      {/* Featured Skin Image */}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '20px',
+        width: '100%',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        {coverSkin?.image ? (
+          <img
+            src={coverSkin.image}
+            alt={caseData.name}
             style={{
-              width: "48px",
-              height: "48px",
-              borderRadius: "12px",
-              background: loading ? "rgba(255,255,255,0.1)" : "rgba(0, 255, 136, 0.2)",
-              border: "2px solid rgba(0, 255, 136, 0.3)",
-              color: "#00ff88",
-              fontSize: "1.2rem",
-              cursor: loading ? "not-allowed" : "pointer",
-              transition: "all 0.2s ease",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: "bold"
+              width: '90%',
+              height: '180px',
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 20px 35px rgba(0,0,0,0.9))'
             }}
-            onMouseOver={(e) => {
-              if (!loading) {
-                e.target.style.background = "rgba(0, 255, 136, 0.3)";
-                e.target.style.transform = "scale(1.05)";
-              }
-            }}
-            onMouseOut={(e) => {
-              if (!loading) {
-                e.target.style.background = "rgba(0, 255, 136, 0.2)";
-                e.target.style.transform = "scale(1)";
-              }
-            }}
-          >
-            {expanded ? "▼" : "▶"}
+          />
+        ) : (
+          <div style={{ fontSize: '6rem', filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))' }}>{caseData.emoji}</div>
+        )}
+      </div>
+
+      {/* Case Info */}
+      <div style={{ textAlign: 'center', width: '100%' }}>
+        <div style={{
+          fontSize: '0.7rem',
+          fontWeight: '900',
+          color: caseData.color,
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          marginBottom: '5px'
+        }}>
+          {caseData.rarity} Case
+        </div>
+        <h3 style={{
+          fontSize: '1.4rem',
+          fontWeight: 'bold',
+          margin: '0 0 15px 0',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }}>
+          {caseData.name}
+        </h3>
+
+        <div style={{
+          background: 'rgba(255,255,255,0.03)',
+          padding: '12px',
+          borderRadius: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10px',
+          border: '1px solid rgba(255,255,255,0.05)'
+        }}>
+          <span style={{ fontSize: '1.2rem', fontWeight: '900', color: '#f5ac3b' }}>
+            {parseFloat(caseData.price).toFixed(2)}€
+          </span>
+          <div style={{ width: '1px', height: '15px', background: 'rgba(255,255,255,0.1)' }} />
+          <button style={{
+            background: 'none',
+            border: 'none',
+            color: 'rgba(255,255,255,0.4)',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            fontSize: '0.8rem'
+          }}>
+            ABRIR
           </button>
         </div>
       </div>
-
-      {/* Contenido expandido */}
-      {expanded && (
-        <div style={{
-          background: "rgba(0,0,0,0.4)",
-          padding: "20px",
-          borderTop: "1px solid rgba(0, 255, 136, 0.2)",
-          animation: "slideDown 0.3s ease"
-        }}>
-          {/* Cantidad a abrir */}
-          <div style={{ marginBottom: "16px" }}>
-            <label style={{
-              display: "block",
-              marginBottom: "8px",
-              fontSize: "0.9rem",
-              color: "white",
-              fontWeight: "bold"
-            }}>
-              Abrir <span style={{ color: "#00ff88" }}>{quantity}</span> {quantity === 1 ? "caja" : "cajas"}
-            </label>
-            <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
-              {[1, 2, 5, 10].map(n => (
-                <button
-                  key={n}
-                  onClick={() => setQuantity(n)}
-                  style={{
-                    flex: 1,
-                    padding: "8px",
-                    borderRadius: "8px",
-                    border: quantity === n ? "2px solid #00ff88" : "1px solid rgba(255,255,255,0.2)",
-                    background: quantity === n ? "rgba(0, 255, 136, 0.2)" : "rgba(255,255,255,0.05)",
-                    color: quantity === n ? "#00ff88" : "white",
-                    cursor: "pointer",
-                    fontWeight: "bold",
-                    transition: "all 0.2s ease"
-                  }}
-                >
-                  x{n}
-                </button>
-              ))}
-            </div>
-            <input
-              type="number"
-              min="1"
-              max="100"
-              value={quantity}
-              onChange={(e) => {
-                setQuantity(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)));
-                setBalanceError("");
-              }}
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "8px",
-                border: "2px solid rgba(0, 255, 136, 0.2)",
-                background: "rgba(0,0,0,0.3)",
-                color: "#00ff88",
-                fontSize: "0.9rem",
-                boxSizing: "border-box",
-                fontWeight: "bold"
-              }}
-            />
-            <div style={{
-              marginTop: "12px",
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: "0.85rem",
-              color: "rgba(255,255,255,0.7)"
-            }}>
-              <span>Costo total:</span>
-              <span style={{ fontWeight: "bold", color: "#00ff88" }}>
-                €{(parseFloat(caseData.price) * quantity).toFixed(2)}
-              </span>
-            </div>
-          </div>
-
-          {/* Error */}
-          {balanceError && (
-            <div style={{
-              background: "rgba(255, 85, 85, 0.1)",
-              border: "2px solid #ff5555",
-              color: "#ff9999",
-              padding: "12px",
-              borderRadius: "8px",
-              marginBottom: "16px",
-              fontSize: "0.85rem",
-              display: "flex",
-              gap: "8px",
-              alignItems: "center"
-            }}>
-              <span>⚠️</span>
-              <span>{balanceError}</span>
-            </div>
-          )}
-
-          {/* Carrusel - solo visible si está abriendo */}
-          {loading && (
-            <div style={{
-              background: "rgba(0, 0, 0, 0.5)",
-              borderRadius: "12px",
-              padding: "16px",
-              textAlign: "center",
-              marginBottom: "16px"
-            }}>
-              <div style={{
-                height: "80px",
-                background: "rgba(0, 0, 0, 0.8)",
-                borderRadius: "8px",
-                border: "2px solid #00ff88",
-                overflow: "hidden",
-                position: "relative",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: "12px"
-              }}>
-                <div style={{
-                  display: "flex",
-                  gap: "10px",
-                  animation: "carousel 0.1s linear infinite"
-                }}>
-                  {[...Array(8)].map((_, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        minWidth: "70px",
-                        height: "70px",
-                        background: `linear-gradient(135deg, ${["#ff0000", "#ff9900", "#ffff00", "#00ff00", "#0099ff", "#9900ff", "#ff0099", "#00ffff"][i % 8]} 0%, rgba(255,255,255,0.1) 100%)`,
-                        borderRadius: "8px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: "bold",
-                        fontSize: "1.2rem"
-                      }}
-                    >
-                      🎁
-                    </div>
-                  ))}
-                </div>
-                <div style={{
-                  position: "absolute",
-                  width: "3px",
-                  height: "100%",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  background: "linear-gradient(to bottom, transparent, #00ff88, transparent)",
-                  zIndex: 10
-                }}></div>
-              </div>
-              <div style={{ fontSize: "0.85rem", color: "#00ff88" }}>
-                ⚡ Abriendo {quantity} {quantity === 1 ? "caja" : "cajas"}...
-              </div>
-            </div>
-          )}
-
-          {/* Botón abrir */}
-          {!loading && (
-            <button
-              onClick={openCases}
-              disabled={parentLoading}
-              style={{
-                width: "100%",
-                padding: "14px",
-                background: parentLoading 
-                  ? "rgba(255,255,255,0.1)" 
-                  : "linear-gradient(135deg, #00ff88 0%, #00cc6f 100%)",
-                color: "black",
-                border: "none",
-                borderRadius: "10px",
-                fontWeight: "bold",
-                fontSize: "1rem",
-                cursor: parentLoading ? "not-allowed" : "pointer",
-                transition: "all 0.3s ease",
-                opacity: parentLoading ? 0.5 : 1
-              }}
-              onMouseOver={(e) => {
-                if (!parentLoading) {
-                  e.target.style.transform = "translateY(-2px)";
-                  e.target.style.boxShadow = "0 8px 20px rgba(0, 255, 136, 0.4)";
-                }
-              }}
-              onMouseOut={(e) => {
-                if (!parentLoading) {
-                  e.target.style.transform = "translateY(0)";
-                  e.target.style.boxShadow = "none";
-                }
-              }}
-            >
-              🎁 Abrir {quantity} {quantity === 1 ? "Caja" : "Cajas"}
-            </button>
-          )}
-
-          {/* Resultados */}
-          {results && results.skins.length > 0 && (
-            <div style={{
-              marginTop: "20px",
-              padding: "16px",
-              background: "rgba(0, 255, 136, 0.1)",
-              border: "2px solid rgba(0, 255, 136, 0.3)",
-              borderRadius: "12px",
-              animation: "slideUp 0.3s ease"
-            }}>
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "12px"
-              }}>
-                <h5 style={{
-                  color: "#00ff88",
-                  margin: 0,
-                  fontSize: "1rem"
-                }}>
-                  ✨ {results.skins.length} {results.skins.length === 1 ? "Skin" : "Skins"} Obtenidas
-                </h5>
-                <div style={{
-                  fontSize: "0.9rem",
-                  color: "#00ff88",
-                  fontWeight: "bold"
-                }}>
-                  Valor total: €{results.totalValue.toFixed(2)}
-                </div>
-              </div>
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
-                gap: "8px",
-                maxHeight: "300px",
-                overflowY: "auto"
-              }}>
-                {results.skins.map((skin, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      background: `${getRarityColor(skin.rarity)}20`,
-                      border: `2px solid ${getRarityColor(skin.rarity)}`,
-                      padding: "8px",
-                      borderRadius: "8px",
-                      textAlign: "center",
-                      fontSize: "0.7rem",
-                      animation: "slideDown 0.3s ease"
-                    }}
-                  >
-                    {skin.image && (
-                      <img
-                        src={skin.image}
-                        alt={skin.name}
-                        style={{
-                          width: "100%",
-                          height: "40px",
-                          objectFit: "contain",
-                          marginBottom: "4px",
-                          borderRadius: "4px"
-                        }}
-                        onError={(e) => e.target.style.display = "none"}
-                      />
-                    )}
-                    <div style={{
-                      color: "white",
-                      fontWeight: "bold",
-                      marginBottom: "2px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap"
-                    }}>
-                      {skin.name}
-                    </div>
-                    <div style={{ color: getRarityColor(skin.rarity) }}>
-                      €{skin.price.toFixed(2)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      <style>{`
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes carousel {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-80px); }
-        }
-        @keyframes shine {
-          0%, 100% { transform: translateX(-100%); }
-          50% { transform: translateX(100%); }
-        }
-      `}</style>
-    </div>
+    </motion.div>
   );
 };
 
 export default function Cases() {
   const { user } = useAuth();
-  const { skins: allSkins, loading: skinsLoading } = useFetchSkins(1000, false);
+  const { skins: allSkins, loading: skinsLoading } = useFetchSkins(2000, true);
   const [filterCategory, setFilterCategory] = useState("todos");
-  const [sortBy, setSortBy] = useState("price-asc");
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("price-asc");
+  const [rouletteData, setRouletteData] = useState({ isOpen: false, reward: 0 });
 
-  // Pre-generar todas las cajas
-  const allCases = useMemo(() => {
-    return generateAllCases();
-  }, []);
+  const allCases = useMemo(() => generateAllCases(), []);
 
-  // Calcular estadísticas
-  const stats = useMemo(() => {
-    const avgPrice = (allCases.reduce((sum, c) => sum + parseFloat(c.price), 0) / allCases.length).toFixed(2);
-    return { totalCases: allCases.length, avgPrice };
-  }, [allCases]);
+  // Pre-calcular skins agrupadas por rareza para evitar 1000 filters por cada card
+  const groupedSkins = useMemo(() => {
+    if (!allSkins) return {};
+    return {
+      "mil-spec": allSkins.filter(s => s.rarity === "Mil-Spec Grade" || s.rarity === "Restricted"),
+      "classified": allSkins.filter(s => s.rarity === "Restricted" || s.rarity === "Classified"),
+      "covert": allSkins.filter(s => s.rarity === "Classified" || s.rarity === "Covert")
+    };
+  }, [allSkins]);
 
-  // Filtrar y ordenar cajas
   const filteredCases = useMemo(() => {
-    let filtered = allCases;
+    let filtered = [...allCases];
+    if (filterCategory !== "todos") filtered = filtered.filter(c => c.category === filterCategory);
+    if (searchTerm) filtered = filtered.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    if (filterCategory !== "todos") {
-      filtered = filtered.filter(c => c.category === filterCategory);
-    }
-
-    if (searchTerm) {
-      filtered = filtered.filter(c => 
-        c.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "price-asc":
-          return parseFloat(a.price) - parseFloat(b.price);
-        case "price-desc":
-          return parseFloat(b.price) - parseFloat(a.price);
-        case "name":
-          return a.name.localeCompare(b.name);
-        default:
-          return 0;
-      }
+    return filtered.sort((a, b) => {
+      if (sortBy === "price-asc") return parseFloat(a.price) - parseFloat(b.price);
+      if (sortBy === "price-desc") return parseFloat(b.price) - parseFloat(a.price);
+      if (sortBy === "alpha-asc") return a.name.localeCompare(b.name);
+      if (sortBy === "alpha-desc") return b.name.localeCompare(a.name);
+      return 0;
     });
+  }, [allCases, filterCategory, searchTerm, sortBy]);
 
-    return filtered;
-  }, [allCases, filterCategory, sortBy, searchTerm]);
+  const categories = [
+    { id: 'todos', label: 'TODAS', icon: '📦' },
+    { id: 'económica', label: 'ECONÓMICAS', icon: '🍕' },
+    { id: 'intermedia', label: 'ESTÁNDAR', icon: '🔥' },
+    { id: 'premium', label: 'PREMIUM', icon: '💎' },
+    { id: 'limited', label: 'LIMITADAS', icon: '🌟' }
+  ];
 
-  if (skinsLoading) {
-    return (
-      <div style={{
-        minHeight: "100vh",
-        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexDirection: "column"
-      }}>
-        <div style={{ fontSize: "3rem", marginBottom: "20px", animation: "pulse 1.5s infinite" }}>
-          🎁
-        </div>
-        <div style={{ color: "#00ff88", fontSize: "1.2rem", fontWeight: "bold" }}>
-          Cargando cajas y skins...
-        </div>
-      </div>
-    );
-  }
+  const sortOptions = [
+    { id: 'price-asc', label: 'Precio: Bajo a Alto' },
+    { id: 'price-desc', label: 'Precio: Alto a Bajo' },
+    { id: 'alpha-asc', label: 'Nombre: A-Z' },
+    { id: 'alpha-desc', label: 'Nombre: Z-A' }
+  ];
+
+  // Ya no bloqueamos toda la UI esperando a las skins.
+  // Las cajas se mostrarán con emojis y luego cargarán las imágenes.
+
+  const dailyCases = [
+    { level: 0, name: "DAILY FREE", color: "#10b981", emoji: "🗳️", unlocked: true, id: "daily-0" },
+    { level: 5, name: "BRONZE", color: "#cd7f32", emoji: "🧰", unlocked: (user?.level || 0) >= 5, id: "daily-5" },
+    { level: 10, name: "SILVER", color: "#c0c0c0", emoji: "💼", unlocked: (user?.level || 0) >= 10, id: "daily-10" },
+    { level: 20, name: "PLATINUM", color: "#e5e4e2", emoji: "📦", unlocked: (user?.level || 0) >= 20, id: "daily-20" },
+    { level: 30, name: "GOLD", color: "#ffd700", emoji: "🎖️", unlocked: (user?.level || 0) >= 30, id: "daily-30" },
+    { level: 40, name: "EMERALD", color: "#50c878", emoji: "🌲", unlocked: (user?.level || 0) >= 40, id: "daily-40" },
+    { level: 50, name: "DIAMOND", color: "#b9f2ff", emoji: "💎", unlocked: (user?.level || 0) >= 50, id: "daily-50" },
+    { level: 60, name: "RUBY", color: "#e0115f", emoji: "🏮", unlocked: (user?.level || 0) >= 60, id: "daily-60" },
+    { level: 75, name: "ELITE", color: "#ff4500", emoji: "🔥", unlocked: (user?.level || 0) >= 75, id: "daily-75" },
+    { level: 100, name: "LEGEND", color: "#8a2be2", emoji: "👑", unlocked: (user?.level || 0) >= 100, id: "daily-100" },
+  ];
 
   return (
     <div style={{
       minHeight: "100vh",
-      background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-      padding: "40px 20px"
+      background: "#0f1115",
+      padding: "60px 20px"
     }}>
-      <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-        {/* Header mejorado */}
-        <div style={{
-          marginBottom: "40px",
-          textAlign: "center",
-          background: "linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)",
-          padding: "40px 20px",
-          borderRadius: "16px",
-          border: "1px solid rgba(0, 255, 136, 0.2)"
-        }}>
-          <h1 style={{
-            fontSize: "3rem",
-            color: "white",
-            margin: "0 0 16px 0",
-            fontWeight: "bold",
-            textShadow: "0 4px 12px rgba(0,0,0,0.5)"
-          }}>
-            🎁 Cajas de Skins Premium
-          </h1>
-          <p style={{
-            fontSize: "1rem",
-            color: "rgba(255,255,255,0.7)",
-            margin: 0,
-            marginBottom: "20px"
-          }}>
-            Abre cajas y obtén skins reales • <span style={{ color: "#00ff88", fontWeight: "bold" }}>€{user?.balance?.toFixed(2) || 0}</span> disponibles
-          </p>
-          <div style={{
-            display: "flex",
-            gap: "20px",
-            justifyContent: "center",
-            fontSize: "0.95rem",
-            color: "rgba(255,255,255,0.6)"
-          }}>
-            <div>📊 <span style={{ color: "#00ff88", fontWeight: "bold" }}>{stats.totalCases}</span> cajas</div>
-            <div>💰 Precio promedio: <span style={{ color: "#00ff88", fontWeight: "bold" }}>€{stats.avgPrice}</span></div>
-            <div>🎒 Inventario: <span style={{ color: "#3b82f6", fontWeight: "bold" }}>{user?.inventory?.length || 0}</span></div>
-          </div>
-        </div>
+      <div style={{ maxWidth: "1600px", margin: "0 auto" }}>
 
-        {/* Controles de filtro mejorados */}
-        <div style={{
-          display: "flex",
-          gap: "16px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-          background: "rgba(0,0,0,0.3)",
-          padding: "20px",
-          borderRadius: "12px",
-          border: "1px solid rgba(0, 255, 136, 0.2)",
-          backdropFilter: "blur(10px)"
-        }}>
-          {/* Búsqueda */}
-          <div style={{ flex: 1, minWidth: "200px" }}>
-            <label style={{
-              display: "block",
-              marginBottom: "8px",
-              fontSize: "0.85rem",
-              color: "rgba(255,255,255,0.7)",
-              fontWeight: "bold"
-            }}>
-              🔍 Buscar Caja
-            </label>
-            <input
-              type="text"
-              placeholder="Escribe nombre de la caja..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                borderRadius: "8px",
-                border: "2px solid rgba(0, 255, 136, 0.2)",
-                background: "rgba(0,0,0,0.3)",
-                color: "white",
-                fontSize: "0.9rem",
-                boxSizing: "border-box"
-              }}
-            />
-          </div>
+        {skinsLoading && (
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 10, ease: "linear" }}
+            style={{
+              position: 'fixed', top: '80px', left: 0, right: 0, height: '2px',
+              background: '#f5ac3b', zIndex: 1000, originX: 0, opacity: 0.5
+            }}
+          />
+        )}
 
-          {/* Categoría */}
-          <div>
-            <label style={{
-              display: "block",
-              marginBottom: "8px",
-              fontSize: "0.85rem",
-              color: "rgba(255,255,255,0.7)",
-              fontWeight: "bold"
-            }}>
-              📂 Categoría
-            </label>
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              style={{
-                padding: "10px 12px",
-                borderRadius: "8px",
-                border: "2px solid #00ff88",
-                background: "rgba(0,0,0,0.3)",
-                color: "#00ff88",
-                cursor: "pointer",
-                fontWeight: "bold"
-              }}
-            >
-              <option value="todos">Todas</option>
-              <option value="económica">💚 Económicas</option>
-              <option value="intermedia">💙 Intermedias</option>
-              <option value="premium">💜 Premium</option>
-            </select>
+        {/* Daily Cases Section */}
+        <section style={{ marginBottom: '80px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '900', margin: 0 }}>🎁 CAJAS DIARIAS</h2>
+            <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#f5ac3b' }}>TU NIVEL: {user?.level || 0}</div>
           </div>
-
-          {/* Ordenar */}
-          <div>
-            <label style={{
-              display: "block",
-              marginBottom: "8px",
-              fontSize: "0.85rem",
-              color: "rgba(255,255,255,0.7)",
-              fontWeight: "bold"
-            }}>
-              📊 Ordenar
-            </label>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              style={{
-                padding: "10px 12px",
-                borderRadius: "8px",
-                border: "2px solid #00ff88",
-                background: "rgba(0,0,0,0.3)",
-                color: "#00ff88",
-                cursor: "pointer",
-                fontWeight: "bold"
-              }}
-            >
-              <option value="price-asc">💵 Menor Precio</option>
-              <option value="price-desc">💴 Mayor Precio</option>
-              <option value="name">🔤 Nombre (A-Z)</option>
-            </select>
-          </div>
-
-          {/* Contador */}
-          <div style={{
-            padding: "10px 16px",
-            borderRadius: "8px",
-            background: "rgba(0, 255, 136, 0.15)",
-            border: "1px solid rgba(0, 255, 136, 0.4)",
-            color: "#00ff88",
-            fontWeight: "bold",
-            display: "flex",
-            alignItems: "center",
-            alignSelf: "flex-end"
-          }}>
-            📊 {filteredCases.length} cajas
-          </div>
-        </div>
-
-        {/* Grid de cajas mejorado */}
-        {filteredCases.length > 0 ? (
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-            gap: "24px"
-          }}>
-            {filteredCases.map((caseData) => (
-              <CaseCard
-                key={caseData.id}
-                caseData={caseData}
-                allSkins={allSkins}
-                loading={skinsLoading}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
+            {dailyCases.map((dc, i) => (
+              <DailyCard
+                key={i}
+                dc={dc}
+                onClaimSuccess={(reward) => setRouletteData({ isOpen: true, reward: parseFloat(reward) })}
               />
             ))}
           </div>
-        ) : (
-          <div style={{
-            textAlign: "center",
-            padding: "80px 20px",
-            color: "rgba(255,255,255,0.5)"
-          }}>
-            <div style={{ fontSize: "3rem", marginBottom: "16px" }}>📭</div>
-            <p style={{ fontSize: "1.1rem" }}>No hay cajas que coincidan con tu búsqueda</p>
+        </section>
+
+        <DailyRouletteModal
+          isOpen={rouletteData.isOpen}
+          rewardAmount={rouletteData.reward}
+          skinsPool={allSkins.length > 0 ? allSkins : [{ name: 'Cargando...', image: '', rarity: 'Common' }]}
+          onClose={() => setRouletteData({ ...rouletteData, isOpen: false })}
+        />
+
+        {/* Premium Section */}
+        <section style={{ marginBottom: '80px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
+            <span style={{ fontSize: '2rem' }}>💎</span>
+            <h2 style={{ fontSize: '2rem', fontWeight: '900', margin: 0, letterSpacing: '-1px' }}>
+              ABRE CAJAS PREMIUM Y OBTÉN SKINS ÉPICAS
+            </h2>
           </div>
-        )}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+            gap: "30px"
+          }}>
+            {allCases.filter(c => c.category === "premium").map((caseData) => (
+              <CaseCard
+                key={caseData.id}
+                caseData={caseData}
+                validSkins={groupedSkins[caseData.rarity]}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* Collections Section */}
+        <section>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '40px' }}>
+            <div>
+              <h2 style={{ fontSize: '3rem', fontWeight: '900', margin: 0, letterSpacing: '-2px' }}>COLECCIONES</h2>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 'bold', margin: '5px 0 0 0' }}>Skins exclusivas de todos los valores</p>
+            </div>
+
+            {/* Filters Bar moved inside Collections */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'rgba(255,255,255,0.02)',
+              padding: '10px 20px',
+              borderRadius: '20px',
+              border: '1px solid rgba(255,255,255,0.05)',
+              gap: '20px'
+            }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {categories.filter(c => c.id !== 'premium').map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setFilterCategory(cat.id)}
+                    style={{
+                      padding: '10px 18px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      background: filterCategory === cat.id ? '#f5ac3b' : 'rgba(255,255,255,0.05)',
+                      color: filterCategory === cat.id ? 'black' : 'rgba(255,255,255,0.4)',
+                      fontWeight: '900',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      transition: 'all 0.2s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <span>{cat.icon}</span>
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ width: '1px', height: '30px', background: 'rgba(255,255,255,0.1)' }} />
+              <input
+                type="text"
+                placeholder="Buscar..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                style={{
+                  padding: '10px 15px',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(0,0,0,0.2)',
+                  color: 'white',
+                  outline: 'none',
+                  fontSize: '0.8rem',
+                  width: '150px'
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+            gap: "30px"
+          }}>
+            {filteredCases.filter(c => c.category !== "premium" && c.category !== "daily").map((caseData) => (
+              <CaseCard
+                key={caseData.id}
+                caseData={caseData}
+                validSkins={groupedSkins[caseData.rarity]}
+              />
+            ))}
+          </div>
+
+          {(filteredCases.filter(c => c.category !== "premium" && c.category !== "daily").length === 0) && (
+            <div style={{ textAlign: 'center', padding: '100px', color: 'rgba(255,255,255,0.2)' }}>
+              <div style={{ fontSize: '5rem', marginBottom: '20px' }}>📦</div>
+              <h2 style={{ fontWeight: '900', letterSpacing: '2px' }}>NO SE ENCONTRARON COLECCIONES</h2>
+            </div>
+          )}
+        </section>
       </div>
 
       <style>{`

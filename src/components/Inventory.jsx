@@ -1,184 +1,218 @@
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
+import { motion } from "framer-motion";
+import { getRarityColor } from "../constants/colors.js";
 
 export default function Inventory() {
-  const { user, updateUser } = useAuth();
+  const { user, sellSkin } = useAuth();
 
   const inventory = user?.inventory || [];
 
-  // Valor total del inventario
   const totalValue = inventory.reduce(
     (acc, skin) => acc + (skin.price || 0),
     0
   );
 
-  // Vender skin individual
-  const sellSkin = (skinId) => {
-    const skinToSell = inventory.find((s) => s.id === skinId);
-    if (!skinToSell) return;
-
-    const updatedInventory = inventory.filter((s) => s.id !== skinId);
-
-    updateUser({
-      ...user,
-      inventory: updatedInventory,
-      balance: user.balance + skinToSell.price,
-    });
+  const handleSellSkin = async (skinId) => {
+    await sellSkin(skinId);
   };
 
-  // Vender todas las skins
-  const sellAllSkins = () => {
-    updateUser({
-      ...user,
-      inventory: [],
-      balance: user.balance + totalValue,
-    });
+  const sellAllSkins = async () => {
+    if (!window.confirm("¿Estás seguro de que quieres vender todo tu inventario?")) return;
+    for (const skin of inventory) {
+      await sellSkin(skin.id);
+    }
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "linear-gradient(135deg, #050812 0%, #0a0f1e 50%, #040609 100%)",
-        padding: "40px 20px",
-        color: "white",
-      }}
-    >
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        <h2 style={{ marginBottom: "20px" }}>
-          Tu Inventario (Valor total: {totalValue.toLocaleString()} €)
-        </h2>
+    <div style={{
+      minHeight: "100vh",
+      background: "#0f1115",
+      padding: "60px 20px",
+      color: "white",
+    }}>
+      <div style={{ maxWidth: "1600px", margin: "0 auto" }}>
 
-        {/* Si no hay skins */}
-        {inventory.length === 0 ? (
-          <div
-            style={{
-              background: "rgba(20, 25, 50, 0.8)",
-              padding: "40px",
-              borderRadius: "12px",
-              textAlign: "center",
-            }}
-          >
-            No tienes skins en tu inventario actualmente.
+        {/* Header section */}
+        <header style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '60px',
+          background: 'rgba(255,255,255,0.02)',
+          padding: '40px',
+          borderRadius: '32px',
+          border: '1px solid rgba(255,255,255,0.05)',
+          backdropFilter: 'blur(20px)'
+        }}>
+          <div>
+            <h1 style={{
+              fontSize: '3rem',
+              fontWeight: '900',
+              margin: 0,
+              letterSpacing: '-1px',
+              background: 'linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.4) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>MI INVENTARIO</h1>
+            <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
+              <div style={{ fontSize: '1.2rem', color: '#f5ac3b', fontWeight: '900' }}>
+                VALOR: {totalValue.toLocaleString()}€
+              </div>
+              <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
+              <div style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>
+                {inventory.length} ARTÍCULOS
+              </div>
+            </div>
           </div>
-        ) : (
-          <>
-            {/* Botón vender todas */}
+
+          {inventory.length > 0 && (
             <button
               onClick={sellAllSkins}
               style={{
                 background: "linear-gradient(90deg, #ff416c, #ff4b2b)",
                 color: "white",
-                padding: "12px 20px",
+                padding: "18px 40px",
                 border: "none",
-                borderRadius: "8px",
-                fontWeight: "bold",
-                marginBottom: "20px",
+                borderRadius: "16px",
+                fontWeight: "900",
+                fontSize: '1rem',
                 cursor: "pointer",
+                boxShadow: '0 10px 30px rgba(255, 65, 108, 0.4)',
+                letterSpacing: '1px',
+                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
               }}
+              onMouseEnter={(e) => e.target.style.transform = 'scale(1.05) translateY(-2px)'}
+              onMouseLeave={(e) => e.target.style.transform = 'scale(1) translateY(0)'}
             >
-              Vender Todas las Skins
+              VENDER TODO
             </button>
+          )}
+        </header>
 
-            {/* Grid inventario */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fill, minmax(200px, 1fr))",
-                gap: "16px",
-              }}
-            >
-              {inventory.map((skin) => (
-                <div
+        {inventory.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              padding: "120px 40px",
+              borderRadius: "40px",
+              textAlign: "center",
+              background: 'rgba(255,255,255,0.01)',
+              border: '2px dashed rgba(255,255,255,0.05)'
+            }}
+          >
+            <div style={{ fontSize: '6rem', marginBottom: '30px', filter: 'grayscale(1)' }}>🎒</div>
+            <h3 style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '10px' }}>TU INVENTARIO ESTÁ VACÍO</h3>
+            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '1.2rem' }}>¡Abre algunas cajas para empezar tu colección hoy mismo!</p>
+          </motion.div>
+        ) : (
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
+            gap: "25px",
+          }}>
+            {inventory.map((skin, i) => {
+              const color = getRarityColor(skin.rarity);
+              return (
+                <motion.div
                   key={skin.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.03 }}
                   style={{
-                    background:
-                      "linear-gradient(135deg, rgba(10,14,39,0.9), rgba(26,31,58,0.9))",
-                    padding: "16px",
-                    borderRadius: "12px",
+                    background: "rgba(255,255,255,0.02)",
+                    padding: "30px",
+                    borderRadius: "28px",
                     display: "flex",
                     flexDirection: "column",
-                    justifyContent: "space-between",
-                    height: "300px",
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    borderBottom: `4px solid ${color}`,
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    cursor: 'default'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                    e.currentTarget.style.transform = 'translateY(-8px)';
+                    e.currentTarget.style.borderColor = `${color}44`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)';
                   }}
                 >
-                  {/* Imagen */}
-                  {skin.image && (
-                    <div
+                  {/* Glow effect */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '-20px',
+                    right: '-20px',
+                    width: '80px',
+                    height: '80px',
+                    background: color,
+                    filter: 'blur(40px)',
+                    opacity: 0.1,
+                    borderRadius: '50%'
+                  }} />
+
+                  <div style={{ height: "160px", marginBottom: "25px", display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <img
+                      src={skin.image}
+                      alt={skin.name}
                       style={{
                         width: "100%",
-                        height: "120px",
-                        overflow: "hidden",
-                        borderRadius: "8px",
-                        marginBottom: "10px",
+                        height: "100%",
+                        objectFit: "contain",
+                        filter: 'drop-shadow(0 15px 25px rgba(0,0,0,0.5))'
                       }}
-                    >
-                      <img
-                        src={skin.image}
-                        alt={skin.name}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "contain",
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Info */}
-                  <div>
-                    <h3
-                      style={{
-                        fontSize: "0.95rem",
-                        marginBottom: "6px",
-                      }}
-                    >
-                      {skin.name}
-                    </h3>
-
-                    <p
-                      style={{
-                        color: "#00ff88",
-                        fontWeight: "bold",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      {skin.price} €
-                    </p>
-
-                    <p
-                      style={{
-                        fontSize: "0.75rem",
-                        opacity: 0.7,
-                      }}
-                    >
-                      Rareza:{" "}
-                      {skin.rarity?.toUpperCase() || "MIL-SPEC"}
-                    </p>
+                    />
                   </div>
 
-                  {/* Botón vender */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ color: color, fontSize: '0.65rem', fontWeight: '900', letterSpacing: '1px', marginBottom: '5px' }}>
+                      {skin.rarity?.toUpperCase() || "MIL-SPEC"}
+                    </div>
+                    <h3 style={{ fontSize: "1.1rem", fontWeight: 'bold', margin: '0 0 10px 0', height: '2.6rem', overflow: 'hidden' }}>
+                      {skin.name}
+                    </h3>
+                    <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#fff' }}>
+                      {skin.price.toLocaleString()}€
+                    </div>
+                  </div>
+
                   <button
-                    onClick={() => sellSkin(skin.id)}
+                    onClick={() => handleSellSkin(skin.id)}
                     style={{
-                      background:
-                        "linear-gradient(90deg, #ff4b2b, #ff416c)",
-                      marginTop: "12px",
+                      background: "rgba(255,255,255,0.05)",
                       color: "white",
-                      padding: "8px",
-                      border: "none",
-                      borderRadius: "6px",
-                      fontWeight: "bold",
+                      padding: "14px",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: "14px",
+                      fontWeight: "900",
+                      fontSize: '0.8rem',
                       cursor: "pointer",
+                      transition: 'all 0.2s ease',
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = '#ef4444';
+                      e.target.style.borderColor = 'transparent';
+                      e.target.style.color = 'white';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = 'rgba(255,255,255,0.05)';
+                      e.target.style.borderColor = 'rgba(255,255,255,0.1)';
+                      e.target.style.color = 'white';
                     }}
                   >
-                    Vender por {skin.price}€
+                    VENDER ARTÍCULO
                   </button>
-                </div>
-              ))}
-            </div>
-          </>
+                </motion.div>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

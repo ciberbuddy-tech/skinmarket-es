@@ -21,6 +21,14 @@ export const RARITIES = {
 };
 
 export const getRarityColor = (rarity) => {
-  const rarity_normalized = rarity?.toLowerCase() || 'mil-spec';
-  return (RARITIES[rarity_normalized] || RARITIES['mil-spec']).color;
+  if (!rarity) return RARITIES['mil-spec'].color;
+  const r = rarity.toLowerCase();
+
+  if (r.includes('covert') || r.includes('red') || r.includes('extraordinary')) return RARITIES['covert'].color;
+  if (r.includes('classified') || r.includes('pink') || r.includes('ancient')) return RARITIES['classified'].color;
+  if (r.includes('restricted') || r.includes('purple')) return RARITIES['restricted'].color;
+  if (r.includes('mil-spec') || r.includes('blue')) return RARITIES['mil-spec'].color;
+  if (r.includes('contraband') || r.includes('gold') || r.includes('rare')) return RARITIES['exceedingly-rare'].color;
+
+  return RARITIES['mil-spec'].color;
 };
